@@ -615,9 +615,9 @@ alex_table = listArray (0 :: Int, 5184)
   , 71
   , 1
   , 3
-  , 40
+  , 35
   , 3
-  , 39
+  , 34
   , 28
   , 47
   , 47
@@ -638,8 +638,8 @@ alex_table = listArray (0 :: Int, 5184)
   , 0
   , 5
   , 0
-  , 33
-  , 34
+  , 36
+  , 37
   , 25
   , 23
   , 21
@@ -656,8 +656,8 @@ alex_table = listArray (0 :: Int, 5184)
   , 46
   , 46
   , 46
-  , 37
-  , 38
+  , 33
+  , 40
   , 29
   , 22
   , 27
@@ -689,9 +689,9 @@ alex_table = listArray (0 :: Int, 5184)
   , 71
   , 71
   , 71
-  , 35
+  , 38
   , 0
-  , 36
+  , 39
   , 0
   , 0
   , 0
@@ -11258,10 +11258,11 @@ alex_actions = array (0 :: Int, 83)
 {-# LINE 57 "Goat.x" #-}
 
 data Token
-    = BEGIN | DO | ELSE | END | FI | IF | OD 
-    | PROC | READ | REF | THEN | VAL | WHILE | WRITE 
-    | COM | EQU | ADD | SUB | MUL | DIV | GRE | GRE_EQ | LES | LES_EQ | NOT | NOT_EQ
-    | LPA | RPA | LBR | RBR | COL | SCO | AND | IOR
+    = KEY_BEGIN | KEY_DO    | KEY_ELSE  | KEY_END   | KEY_FI    | KEY_IF    | KEY_OD 
+    | KEY_PROC  | KEY_READ  | KEY_REF   | KEY_THEN  | KEY_VAL   | KEY_WHILE | KEY_WRITE 
+    | OP_COM    | OP_EQU    | OP_ADD    | OP_SUB    | OP_MUL    | OP_DIV    | OP_GRE    | OP_GRE_EQ 
+    | OP_LES    | OP_LES_EQ | OP_NOT    | OP_NOT_EQ | OP_AND    | OP_IOR    | OP_COL
+    | CTRL_LPA  | CTRL_RPA  | CTRL_LBR  | CTRL_RBR  | CTRL_SCO
     | TYPE_BOOL | TYPE_FLOAT | TYPE_INT | BOOL Bool | INT Int | FLOAT Float
     | IDENT String
     deriving (Eq, Show)
@@ -11271,45 +11272,45 @@ main
         s <- getContents
         print (alexScanTokens s)
 
-alex_action_1 =  \s -> BEGIN  
-alex_action_2 =  \s -> DO     
-alex_action_3 =  \s -> ELSE   
-alex_action_4 =  \s -> END    
-alex_action_5 =  \s -> FI     
-alex_action_6 =  \s -> IF     
-alex_action_7 =  \s -> OD     
-alex_action_8 =  \s -> PROC   
-alex_action_9 =  \s -> READ   
-alex_action_10 =  \s -> REF    
-alex_action_11 =  \s -> THEN   
-alex_action_12 =  \s -> VAL    
-alex_action_13 =  \s -> WHILE  
-alex_action_14 =  \s -> WRITE  
-alex_action_15 =  \s -> COM    
-alex_action_16 =  \s -> EQU    
-alex_action_17 =  \s -> ADD    
-alex_action_18 =  \s -> SUB    
-alex_action_19 =  \s -> MUL    
-alex_action_20 =  \s -> DIV    
-alex_action_21 =  \s -> GRE    
-alex_action_22 =  \s -> GRE_EQ 
-alex_action_23 =  \s -> LES    
-alex_action_24 =  \s -> LES_EQ 
-alex_action_25 =  \s -> NOT    
-alex_action_26 =  \s -> NOT_EQ 
-alex_action_27 =  \s -> LPA    
-alex_action_28 =  \s -> RPA    
-alex_action_29 =  \s -> LBR    
-alex_action_30 =  \s -> RBR    
-alex_action_31 =  \s -> COL    
-alex_action_32 =  \s -> SCO    
-alex_action_33 =  \s -> AND    
-alex_action_34 =  \s -> IOR    
-alex_action_35 =  \s -> TYPE_BOOL  
-alex_action_36 =  \s -> TYPE_FLOAT 
-alex_action_37 =  \s -> TYPE_INT   
-alex_action_38 =  \s -> BOOL True  
-alex_action_39 =  \s -> BOOL False 
+alex_action_1 =  \s -> KEY_BEGIN   
+alex_action_2 =  \s -> KEY_DO      
+alex_action_3 =  \s -> KEY_ELSE    
+alex_action_4 =  \s -> KEY_END     
+alex_action_5 =  \s -> KEY_FI      
+alex_action_6 =  \s -> KEY_IF      
+alex_action_7 =  \s -> KEY_OD      
+alex_action_8 =  \s -> KEY_PROC    
+alex_action_9 =  \s -> KEY_READ    
+alex_action_10 =  \s -> KEY_REF     
+alex_action_11 =  \s -> KEY_THEN    
+alex_action_12 =  \s -> KEY_VAL     
+alex_action_13 =  \s -> KEY_WHILE   
+alex_action_14 =  \s -> KEY_WRITE   
+alex_action_15 =  \s -> OP_COM      
+alex_action_16 =  \s -> OP_EQU      
+alex_action_17 =  \s -> OP_ADD      
+alex_action_18 =  \s -> OP_SUB      
+alex_action_19 =  \s -> OP_MUL      
+alex_action_20 =  \s -> OP_DIV      
+alex_action_21 =  \s -> OP_GRE      
+alex_action_22 =  \s -> OP_GRE_EQ   
+alex_action_23 =  \s -> OP_LES      
+alex_action_24 =  \s -> OP_LES_EQ   
+alex_action_25 =  \s -> OP_NOT      
+alex_action_26 =  \s -> OP_NOT_EQ   
+alex_action_27 =  \s -> OP_COL      
+alex_action_28 =  \s -> OP_AND      
+alex_action_29 =  \s -> OP_IOR      
+alex_action_30 =  \s -> CTRL_LPA    
+alex_action_31 =  \s -> CTRL_RPA    
+alex_action_32 =  \s -> CTRL_LBR    
+alex_action_33 =  \s -> CTRL_RBR    
+alex_action_34 =  \s -> CTRL_SCO    
+alex_action_35 =  \s -> TYPE_BOOL   
+alex_action_36 =  \s -> TYPE_FLOAT  
+alex_action_37 =  \s -> TYPE_INT    
+alex_action_38 =  \s -> BOOL True   
+alex_action_39 =  \s -> BOOL False  
 alex_action_40 =  \s -> INT (read s :: Int)     
 alex_action_41 =  \s -> FLOAT (read s :: Float) 
 alex_action_42 =  IDENT 

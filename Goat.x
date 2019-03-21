@@ -56,10 +56,11 @@ rules :-
 
 {
 data Token
-    = BEGIN | DO | ELSE | END | FI | IF | OD 
-    | PROC | READ | REF | THEN | VAL | WHILE | WRITE 
-    | COM | EQU | ADD | SUB | MUL | DIV | GRE | GRE_EQ | LES | LES_EQ | NOT | NOT_EQ
-    | LPA | RPA | LBR | RBR | COL | SCO | AND | IOR
+    = KEY_BEGIN | KEY_DO    | KEY_ELSE  | KEY_END   | KEY_FI    | KEY_IF    | KEY_OD 
+    | KEY_PROC  | KEY_READ  | KEY_REF   | KEY_THEN  | KEY_VAL   | KEY_WHILE | KEY_WRITE 
+    | OP_COM    | OP_EQU    | OP_ADD    | OP_SUB    | OP_MUL    | OP_DIV    | OP_GRE    | OP_GRE_EQ 
+    | OP_LES    | OP_LES_EQ | OP_NOT    | OP_NOT_EQ | OP_AND    | OP_IOR    | OP_COL
+    | CTRL_LPA  | CTRL_RPA  | CTRL_LBR  | CTRL_RBR  | CTRL_SCO
     | TYPE_BOOL | TYPE_FLOAT | TYPE_INT | BOOL Bool | INT Int | FLOAT Float
     | IDENT String
     deriving (Eq, Show)
