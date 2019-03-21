@@ -61,7 +61,7 @@ data Token
     | OP_COM    | OP_EQU    | OP_ADD    | OP_SUB    | OP_MUL    | OP_DIV    | OP_GRE    | OP_GRE_EQ 
     | OP_LES    | OP_LES_EQ | OP_NOT    | OP_NOT_EQ | OP_AND    | OP_IOR    | OP_COL
     | CTRL_LPA  | CTRL_RPA  | CTRL_LBR  | CTRL_RBR  | CTRL_SCO
-    | TYPE_BOOL | TYPE_FLOAT | TYPE_INT | BOOL Bool | INT Int | FLOAT Float
+    | TYPE_BOOL | TYPE_FLOAT| TYPE_INT  | BOOL Bool | INT Int   | FLOAT Float
     | IDENT String
     deriving (Eq, Show)
 
