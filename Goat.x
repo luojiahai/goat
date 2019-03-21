@@ -11,45 +11,45 @@ $alpha = [a-zA-Z]
 
 rules :-
     $white  ;
-    begin   { \s -> BEGIN  }
-    do      { \s -> DO     }
-    else    { \s -> ELSE   }
-    end     { \s -> END    }
-    fi      { \s -> FI     }
-    if      { \s -> IF     }
-    od      { \s -> OD     }
-    proc    { \s -> PROC   }
-    read    { \s -> READ   }
-    ref     { \s -> REF    }
-    then    { \s -> THEN   }
-    val     { \s -> VAL    }
-    while   { \s -> WHILE  }
-    write   { \s -> WRITE  }
-    \,      { \s -> COM    }
-    \=      { \s -> EQU    }
-    \+      { \s -> ADD    }
-    \-      { \s -> SUB    }
-    \*      { \s -> MUL    }
-    \/      { \s -> DIV    }
-    \>      { \s -> GRE    }
-    \>\=    { \s -> GRE_EQ }
-    \<      { \s -> LES    }
-    \<\=    { \s -> LES_EQ }
-    \!      { \s -> NOT    }
-    \!=     { \s -> NOT_EQ }
-    \(      { \s -> LPA    }
-    \)      { \s -> RPA    }
-    \[      { \s -> LBR    }
-    \]      { \s -> RBR    }
-    \:      { \s -> COL    }
-    \;      { \s -> SCO    }
-    \&\&    { \s -> AND    }
-    \|\|    { \s -> IOR    }
-    bool    { \s -> TYPE_BOOL  }
-    float   { \s -> TYPE_FLOAT }
-    int     { \s -> TYPE_INT   }
-    true    { \s -> BOOL True  }
-    false   { \s -> BOOL False }
+    begin   { \s -> KEY_BEGIN   }
+    do      { \s -> KEY_DO      }
+    else    { \s -> KEY_ELSE    }
+    end     { \s -> KEY_END     }
+    fi      { \s -> KEY_FI      }
+    if      { \s -> KEY_IF      }
+    od      { \s -> KEY_OD      }
+    proc    { \s -> KEY_PROC    }
+    read    { \s -> KEY_READ    }
+    ref     { \s -> KEY_REF     }
+    then    { \s -> KEY_THEN    }
+    val     { \s -> KEY_VAL     }
+    while   { \s -> KEY_WHILE   }
+    write   { \s -> KEY_WRITE   }
+    \,      { \s -> OP_COM      }
+    \=      { \s -> OP_EQU      }
+    \+      { \s -> OP_ADD      }
+    \-      { \s -> OP_SUB      }
+    \*      { \s -> OP_MUL      }
+    \/      { \s -> OP_DIV      }
+    \>      { \s -> OP_GRE      }
+    \>\=    { \s -> OP_GRE_EQ   }
+    \<      { \s -> OP_LES      }
+    \<\=    { \s -> OP_LES_EQ   }
+    \!      { \s -> OP_NOT      }
+    \!=     { \s -> OP_NOT_EQ   }
+    \:      { \s -> OP_COL      }
+    \&\&    { \s -> OP_AND      }
+    \|\|    { \s -> OP_IOR      }
+    \(      { \s -> CTRL_LPA    }
+    \)      { \s -> CTRL_RPA    }
+    \[      { \s -> CTRL_LBR    }
+    \]      { \s -> CTRL_RBR    }
+    \;      { \s -> CTRL_SCO    }
+    bool    { \s -> TYPE_BOOL   }
+    float   { \s -> TYPE_FLOAT  }
+    int     { \s -> TYPE_INT    }
+    true    { \s -> BOOL True   }
+    false   { \s -> BOOL False  }
     $digit  { \s -> INT (read s :: Int)     }
     @float  { \s -> FLOAT (read s :: Float) }
     @ident  { IDENT }
