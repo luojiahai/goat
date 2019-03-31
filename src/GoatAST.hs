@@ -15,38 +15,40 @@ data BBinOp
   = And | Or
     deriving (Eq,Show)
   
--- data BExpr 
---   = BoolConst Bool 
---   | Not BExpr
---   | BBinary BBinOP BExpr BExpr
---   | RBinary RBinOP AExpr AExpr
---     deriving(Show)
+data BExpr 
+  = BoolConst Bool 
+  | Not BExpr
+  | BBinary BBinOp BExpr BExpr
+  | RBinary RBinOp Expr Expr
+    deriving(Show)
+
 data Expr
-  = BoolConst Bool
-  | IntConst Int
+  = IntConst Int
   | StrConst String
   | Num Float
   | Id Ident
   | Add Expr Expr
   | Mul Expr Expr
+  | Sub Expr Expr
+  | Div Expr Expr
   | UnaryMinus Expr
     deriving (Show, Eq)
     
 
--- data RBinOP 
---   = Equ
---   | Greater 
---   | GreaterEqu
---   | Less
---   | LessEqu
---   | NotEqu
---     deriving (Show)
+data RBinOp
+  = Equ
+  | Greater 
+  | GreaterEqu
+  | Less
+  | LessEqu
+  | NotEqu
+    deriving (Show)
 
 -- data ABinOp 
 --   = Add
---   | Subtract
---   | Multiply
---   | Divide
+--   | Sub
+--   | Mul
+--   | Div
 --     deriving (Show)
 
 data Decl 

@@ -159,7 +159,8 @@ pAsg
 pExp, pTerm, pFactor, pUminus, pNum, pIdent, pString :: Parser Expr
 
 pExp 
-  = pString <|> (chainl1 pTerm pAddOp)
+  = (pString)
+    <|> (chainl1 pTerm pAddOp)
     <?>
     "expression"
 
@@ -176,9 +177,14 @@ pAddOp, pMulOp :: Parser (Expr -> Expr -> Expr)
 
 
 pAddOp
-  = do 
-      reservedOp "+"
-      return Add
+  = try (do 
+          reservedOp "+"
+          return Add
+        )
+        <|>
+        (do
+          reservedOp "-"
+          return Sub)
 
 pTerm 
   = chainl1 pFactor pMulOp
@@ -186,9 +192,19 @@ pTerm
     "\"term\""
 
 pMulOp
-  = do 
-      reservedOp "*"
-      return Mul
+  = try(do 
+          reservedOp "*"
+          return Mul
+        )
+        <|>
+        (do
+          reservedOp "/"
+          return Div
+        )
+
+
+
+
 
 pFactor
   = choice [pUminus, parens pExp, pNum, pIdent]
@@ -201,12 +217,24 @@ pUminus
       exp <- pFactor
       return (UnaryMinus exp)
 
-pNum
-  = do
-      n <- natural <?> ""
-      return (IntConst (fromInteger n :: Int))
-    <?>
-    "number"
+pNum 
+    = do
+        ws <- many1 digit
+        lexeme (try
+                  (do { 
+                      ; char '.'
+                      ; ds <- many1 digit
+                      ; let val = read (ws ++ ('.' : ds)) :: Float
+                      ; return (Num val)
+                      }
+                  )
+                  <|>
+                  (do { return (IntConst (read ws :: Int))                    
+                      }
+                  )
+                )
+        <?>
+        "Numer"
 
 pIdent 
   = do
@@ -224,24 +252,7 @@ pLvalue
     "lvalue"
 
 
-pFloat :: Parser Expr
-pFloat 
-    = lexeme (try
-                (do { ws <- many1 digit
-                    ; char '.'
-                    ; ds <- many1 digit
-                    ; let val = read (ws ++ ('.' : ds)) :: Float
-                    ; return (Num val)
-                    }
-                )
-                <|>
-                (do { ws <- many1 digit
-                    ; modifyState (+1)
-                    ; let val = read ws :: Float
-                    ; return  (Num val)                        
-                    }
-                )
-              )
+
 
 -----------------------------------------------------------------
 -- main
