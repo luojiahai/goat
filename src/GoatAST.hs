@@ -56,6 +56,15 @@ data Stmt
   | While Expr [Stmt]
     deriving (Show, Eq)
 
+data ParamIndicator
+  = Val 
+  | Ref
+    deriving (Show, Eq)
+
+data Param
+  = Param ParamIndicator BaseType Ident
+    deriving (Show, Eq)
+
 data GoatProgram
-  = Program [Decl] [Stmt]
+  = Program [Param] [Decl] [Stmt]
     deriving (Show, Eq)

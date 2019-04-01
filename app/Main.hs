@@ -72,6 +72,7 @@ parens     = Q.parens lexer
 squares    = Q.squares lexer
 reserved   = Q.reserved lexer
 reservedOp = Q.reservedOp lexer
+symbol     = Q.symbol lexer
 
 
 
@@ -87,9 +88,24 @@ pProg
   = do
       reserved "proc"
       reserved "main"
-      parens (return ())
+      params <- parens (pParam `sepBy` (symbol ","))
       (decls,stmts) <- pProgBody
-      return (Program decls stmts)
+      return (Program params decls stmts)
+
+
+pParam :: Parser Param
+pParam
+  = do
+      indicator <- pParamIndicator
+      basetype <- pBaseType
+      ident <- identifier
+      return (Param indicator basetype ident)
+      
+
+pParamIndicator :: Parser ParamIndicator
+pParamIndicator
+  =   (reserved "val" >> return Val)
+  <|> (reserved "ref" >> return Ref)
 
 -----------------------------------------------------------------
 --  pProgBody looks for a sequence of declarations followed by a
@@ -103,7 +119,10 @@ pProgBody
       reserved "begin"
       stmts <- many1 pStmt
       reserved "end"
-      return (decls,stmts)
+      return (decls, stmts)
+
+
+
 
 pDecl :: Parser Decl
 pDecl
@@ -128,10 +147,10 @@ pBaseType
 --  read and write statements, and assignments.
 -----------------------------------------------------------------
 
-pStmt, pRead, pWrite, pAsg :: Parser Stmt
+pStmt, pRead, pWrite, pAsg, pIf, pWhile, pCall :: Parser Stmt
 
 pStmt 
-  = choice [pRead, pWrite, pAsg, pIf]
+  = choice [pRead, pWrite, pAsg, pIf, pWhile]
 
 pRead
   = do 
@@ -174,6 +193,22 @@ pIf
           return (If cond stmt1)
         )
 
+pWhile
+  = do
+      reserved "while"
+      cond <- pExp
+      reserved "do"
+      stmt <- many1 pStmt
+      reserved "od"
+      return (While cond stmt)
+
+pCall
+  = do
+      reserved "call"
+      id <- identifier
+      exp <- parens (many1 pExp)
+      semi
+      return (Call id exp)
 
 -----------------------------------------------------------------
 --  pExp is the main parser for expressions. It takes into account
