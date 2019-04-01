@@ -253,7 +253,7 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))      
                 Infix  (reservedOp "!="  >> return (BBinExpr NotEqu     )) AssocLeft]
               ,[Infix  (reservedOp "&&"  >> return (BBinExpr And        )) AssocLeft,
                 Infix  (reservedOp "||"  >> return (BBinExpr Or         )) AssocLeft]
-              ,[Infix  (reservedOp "="  >> return  (BBinExpr Equ        )) AssocLeft]
+              ,[Infix  (reservedOp "="   >> return  (BBinExpr Equ       )) AssocLeft]
               ]
 
 pTerm 
