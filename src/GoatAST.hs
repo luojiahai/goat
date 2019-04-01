@@ -1,23 +1,25 @@
 module GoatAST where
 -- AST Part
 
-type Ident = String
+type Ident = String 
 
 data BaseType 
   = BoolType | IntType | FloatType
     deriving (Show, Eq)
 
+data Shape
+  = Shape [Expr]
+    deriving (Show, Eq)
+
 data Lvalue 
-  = LId Ident
-  | LIdArray Ident [Int]
+  = LId Ident Shape
     deriving (Show, Eq)
 
 data Expr
   = IntConst Int
   | StrConst String
   | Num Float
-  | IdArray Ident [Int]
-  | Id Ident
+  | Id Ident Shape
   | BoolConst Bool
   | UnaryNot Expr
   | UnaryMinus Expr
@@ -45,7 +47,7 @@ data BinOp
 
 
 data Decl 
-  = Decl Ident BaseType
+  = Decl Ident BaseType Shape
     deriving (Show, Eq)
 
 data Stmt 

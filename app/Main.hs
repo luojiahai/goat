@@ -2,6 +2,7 @@ module Main where
 
 import GoatAST
 import Data.Char
+import Debug.Trace
 import Text.Parsec
 import Text.Parsec.Expr
 import Text.Parsec.Language (emptyDef)
@@ -69,7 +70,7 @@ colon      = Q.colon lexer
 semi       = Q.semi lexer
 comma      = Q.comma lexer
 parens     = Q.parens lexer
-squares    = Q.squares lexer
+brackets    = Q.brackets lexer
 reserved   = Q.reserved lexer
 reservedOp = Q.reservedOp lexer
 symbol     = Q.symbol lexer
@@ -145,9 +146,10 @@ pDecl
   = do
       basetype <- pBaseType
       ident <- identifier
+      shape <- pShape
       whiteSpace
       semi
-      return (Decl ident basetype)
+      return (Decl ident basetype shape)
 
 pBaseType :: Parser BaseType
 pBaseType
@@ -292,15 +294,27 @@ pNum
 pIdent 
   = do
       ident <- identifier
-      return (Id ident)
+      shape <- pShape
+      return (Id ident shape)
     <?>
     "identifier"
+
+pShape :: Parser Shape
+pShape
+  = do
+      shape <- brackets (pExp `sepBy1` (symbol ","))
+      trace (show shape) (return ())
+      return (Shape shape)
+      <|>
+      return (Shape [])
+
 
 pLvalue :: Parser Lvalue
 pLvalue
   = do
       ident <- identifier
-      return (LId ident)
+      shape <- pShape
+      return (LId ident shape)
     <?>
     "lvalue"
 
