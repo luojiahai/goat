@@ -131,7 +131,7 @@ pBaseType
 pStmt, pRead, pWrite, pAsg :: Parser Stmt
 
 pStmt 
-  = choice [pRead, pWrite, pAsg]
+  = choice [pRead, pWrite, pAsg, pIf]
 
 pRead
   = do 
@@ -155,6 +155,26 @@ pAsg
       semi
       return (Assign lvalue rvalue)
 
+pIf
+  = do
+      reserved "if"
+      cond <- pExp
+      reserved "then"
+      stmt1 <- many1 pStmt
+      try
+        (do
+          reserved "else"
+          stmt2 <- many1 pStmt
+          reserved "fi"
+          return (IfElse cond stmt1 stmt2)
+        )
+        <|>
+        (do
+          reserved "fi"
+          return (If cond stmt1)
+        )
+
+
 -----------------------------------------------------------------
 --  pExp is the main parser for expressions. It takes into account
 --  the operator precedences and the fact that the binary operators
@@ -173,22 +193,22 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))      
               ,[Infix  (reservedOp "+"   >> return (ABinExpr Add        )) AssocLeft,
                 Infix  (reservedOp "-"   >> return (ABinExpr Sub        )) AssocLeft]
               ,[Prefix (reservedOp "!"   >> return (UnaryNot            ))          ]
-              ,[Infix  (reservedOp "&&"  >> return (BBinExpr And        )) AssocLeft,
-                Infix  (reservedOp "||"  >> return (BBinExpr Or         )) AssocLeft,
-                Infix  (reservedOp ">"   >> return (BBinExpr Greater    )) AssocLeft,
-                Infix  (reservedOp ">="  >> return (BBinExpr GreaterEqu )) AssocLeft,
-                Infix  (reservedOp "<"   >> return (BBinExpr Less       )) AssocLeft,
+              ,[Infix  (reservedOp ">="  >> return (BBinExpr GreaterEqu )) AssocLeft,
                 Infix  (reservedOp "<="  >> return (BBinExpr LessEqu    )) AssocLeft,
+                Infix  (reservedOp ">"   >> return (BBinExpr Greater    )) AssocLeft,
+                Infix  (reservedOp "<"   >> return (BBinExpr Less       )) AssocLeft,
                 Infix  (reservedOp "!="  >> return (BBinExpr NotEqu     )) AssocLeft]
+              ,[Infix  (reservedOp "&&"  >> return (BBinExpr And        )) AssocLeft,
+                Infix  (reservedOp "||"  >> return (BBinExpr Or         )) AssocLeft]
               ]
 
-pTerm = parens pExp
-      <|> (pString)
-      <|> pNum 
-      <|> pIdent
-      <|> (reserved "true"  >> return (BoolConst True))
-      <|> (reserved "false" >> return (BoolConst False))
-
+pTerm 
+  = parens pExp
+  <|> (pString)
+  <|> pNum 
+  <|> pIdent
+  <|> (reserved "true"  >> return (BoolConst True))
+  <|> (reserved "false" >> return (BoolConst False))
 
 pString 
   = do
