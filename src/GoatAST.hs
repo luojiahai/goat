@@ -65,6 +65,13 @@ data Param
   = Param ParamIndicator BaseType Ident
     deriving (Show, Eq)
 
+data ProcedureType
+
+data Procedure
+  = Program Ident [Param] [Decl] [Stmt]
+  | Main [Param] [Decl] [Stmt]
+    deriving (Show, Eq)
+
 data GoatProgram
-  = Program [Param] [Decl] [Stmt]
+  = GoatProgram [Procedure]
     deriving (Show, Eq)

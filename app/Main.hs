@@ -86,12 +86,26 @@ symbol     = Q.symbol lexer
 pProg :: Parser GoatProgram
 pProg
   = do
-      reserved "proc"
-      reserved "main"
-      params <- parens (pParam `sepBy` (symbol ","))
-      (decls,stmts) <- pProgBody
-      return (Program params decls stmts)
+      procs <- many1 pProc
+      return (GoatProgram procs)
+      
 
+pProc :: Parser Procedure
+pProc
+  = do
+      reserved "proc"
+      do
+        (do
+          reserved "main"
+          params <- parens (pParam `sepBy` (symbol ","))
+          (decls,stmts) <- pProgBody
+          return (Main params decls stmts))
+        <|>
+        (do
+          ident <- identifier
+          params <- parens (pParam `sepBy` (symbol ","))
+          (decls,stmts) <- pProgBody
+          return (Program ident params decls stmts))
 
 pParam :: Parser Param
 pParam

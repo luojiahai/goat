@@ -15,3 +15,9 @@ begin
     write b;
     write "\n";
 end
+
+proc p(val float n)
+
+begin
+    write n;
+end
