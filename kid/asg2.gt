@@ -1,3 +1,9 @@
+proc p(val float n)
+
+begin
+    write n;
+end
+
 proc main(val int c, val float d)
     int a;
     int b;
@@ -16,8 +22,3 @@ begin
     write "\n";
 end
 
-proc p(val float n)
-
-begin
-    write n;
-end

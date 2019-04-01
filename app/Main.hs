@@ -105,7 +105,7 @@ pProc
           ident <- identifier
           params <- parens (pParam `sepBy` (symbol ","))
           (decls,stmts) <- pProgBody
-          return (Program ident params decls stmts))
+          return (Procedure ident params decls stmts))
 
 pParam :: Parser Param
 pParam
