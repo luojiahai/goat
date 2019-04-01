@@ -2,7 +2,7 @@ module Main where
 
 import GoatAST
 import Data.Char
-import Debug.Trace
+-- import Debug.Trace
 import Text.Parsec
 import Text.Parsec.Expr
 import Text.Parsec.Language (emptyDef)
@@ -253,6 +253,7 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))      
                 Infix  (reservedOp "!="  >> return (BBinExpr NotEqu     )) AssocLeft]
               ,[Infix  (reservedOp "&&"  >> return (BBinExpr And        )) AssocLeft,
                 Infix  (reservedOp "||"  >> return (BBinExpr Or         )) AssocLeft]
+              ,[Infix  (reservedOp "="  >> return  (BBinExpr Equ        )) AssocLeft]
               ]
 
 pTerm 
@@ -303,7 +304,6 @@ pShape :: Parser Shape
 pShape
   = do
       shape <- brackets (pExp `sepBy1` (symbol ","))
-      trace (show shape) (return ())
       return (Shape shape)
       <|>
       return (Shape [])
