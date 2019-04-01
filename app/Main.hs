@@ -150,7 +150,7 @@ pBaseType
 pStmt, pRead, pWrite, pAsg, pIf, pWhile, pCall :: Parser Stmt
 
 pStmt 
-  = choice [pRead, pWrite, pAsg, pIf, pWhile]
+  = choice [pRead, pWrite, pAsg, pIf, pWhile, pCall]
 
 pRead
   = do 

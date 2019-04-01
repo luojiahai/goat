@@ -7,7 +7,7 @@ begin
         a := 3;
     fi
     while n > 1 do
-        write b;
+        call p(n);
     od
     write a;
     write "\n";
