@@ -97,6 +97,8 @@ pProc
       do
         (do
           reserved "main"
+          -- Keep a record of how many mains are there
+          modifyState(+1)
           parens (return ())
           (decls,stmts) <- pProgBody
           return (Main decls stmts))
@@ -314,8 +316,15 @@ pMain
   = do
       whiteSpace
       p <- pProg
-      eof
-      return p
+      mainCount <- getState
+      case mainCount == 1 of
+          False -> fail "Missing or duplicated main function"
+          True -> do
+                    eof
+                    return p
+
+
+
 
 main :: IO ()
 main
