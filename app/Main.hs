@@ -70,7 +70,7 @@ colon      = Q.colon lexer
 semi       = Q.semi lexer
 comma      = Q.comma lexer
 parens     = Q.parens lexer
-brackets    = Q.brackets lexer
+brackets   = Q.brackets lexer
 reserved   = Q.reserved lexer
 reservedOp = Q.reservedOp lexer
 symbol     = Q.symbol lexer
@@ -153,11 +153,11 @@ pDecl
 
 pBaseType :: Parser BaseType
 pBaseType
-  = do { reserved "bool"; return BoolType }
+  = (reserved "bool" >> return BoolType)
     <|>
-    do { reserved "int"; return IntType }
+    (reserved "int" >> return IntType)
     <|>
-    do { reserved "float"; return FloatType}
+    (reserved "float" >> return FloatType)
 
 
 -----------------------------------------------------------------
@@ -277,16 +277,15 @@ pNum
     = do
         ws <- many1 digit
         lexeme (try
-                  (do { 
-                      ; char '.'
-                      ; ds <- many1 digit
-                      ; let val = read (ws ++ ('.' : ds)) :: Float
-                      ; return (Num val)
-                      }
+                  (do 
+                    char '.'
+                    ds <- many1 digit
+                    let val = read (ws ++ ('.' : ds)) :: Float
+                    return (Num val)
                   )
                   <|>
-                  (do { return (IntConst (read ws :: Int))                    
-                      }
+                  (do 
+                    return (IntConst (read ws :: Int))                    
                   )
                 )
         <?>
@@ -342,23 +341,24 @@ pMain
 
 main :: IO ()
 main
-  = do { progname <- getProgName
-       ; args <- getArgs
-       ; checkArgs progname args
-       ; input <- readFile (head args)
-       ; let output = runParser pMain 0 "" input
-       ; case output of
-           Right ast -> print ast
-           Left  err -> do { putStr "Parse error at "
-                           ; print err
-                           }
-       }
+  = do
+      progname <- getProgName
+      args <- getArgs
+      checkArgs progname args
+      input <- readFile (head args)
+      let output = runParser pMain 0 "" input
+      case output of
+        Right ast -> print ast
+        Left  err -> do
+                      putStr "Parse error at "
+                      print err
 
 checkArgs :: String -> [String] -> IO ()
 checkArgs _ [filename]
    = return ()
 checkArgs progname _
-   = do { putStrLn ("Usage: " ++ progname ++ " filename\n\n")
-       ; exitWith (ExitFailure 1)
-       }
+   = do
+      putStrLn ("Usage: " ++ progname ++ " filename\n\n")
+      exitWith (ExitFailure 1)
+
 
