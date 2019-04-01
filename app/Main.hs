@@ -97,9 +97,9 @@ pProc
       do
         (do
           reserved "main"
-          params <- parens (pParam `sepBy` (symbol ","))
+          parens (return ())
           (decls,stmts) <- pProgBody
-          return (Main params decls stmts))
+          return (Main decls stmts))
         <|>
         (do
           ident <- identifier

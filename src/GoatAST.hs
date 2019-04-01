@@ -68,7 +68,7 @@ data Param
 
 data Procedure
   = Procedure Ident [Param] [Decl] [Stmt]
-  | Main [Param] [Decl] [Stmt]
+  | Main [Decl] [Stmt]
     deriving (Show, Eq)
 
 data GoatProgram
