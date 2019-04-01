@@ -177,14 +177,13 @@ pAddOp, pMulOp :: Parser (Expr -> Expr -> Expr)
 
 
 pAddOp
-  = try (do 
-          reservedOp "+"
-          return Add
-        )
-        <|>
-        (do
-          reservedOp "-"
-          return Sub)
+  = do 
+      reservedOp "+"
+      return Add
+    <|>
+    do
+      reservedOp "-"
+      return Sub
 
 pTerm 
   = chainl1 pFactor pMulOp
@@ -192,15 +191,14 @@ pTerm
     "\"term\""
 
 pMulOp
-  = try(do 
-          reservedOp "*"
-          return Mul
-        )
-        <|>
-        (do
-          reservedOp "/"
-          return Div
-        )
+  = do 
+      reservedOp "*"
+      return Mul
+    <|>
+    do
+      reservedOp "/"
+      return Div
+        
 
 
 

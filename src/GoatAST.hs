@@ -11,37 +11,35 @@ data Lvalue
   = LId Ident
     deriving (Show, Eq)
 
-data BBinOp
-  = And | Or
-    deriving (Eq,Show)
-  
-data BExpr 
-  = BoolConst Bool 
-  | Not BExpr
-  | BBinary BBinOp BExpr BExpr
-  | RBinary RBinOp Expr Expr
-    deriving(Show)
-
 data Expr
   = IntConst Int
   | StrConst String
   | Num Float
   | Id Ident
-  | Add Expr Expr
-  | Mul Expr Expr
-  | Sub Expr Expr
-  | Div Expr Expr
+  | BoolConst Bool
+  | Not Expr
   | UnaryMinus Expr
+  | ABinExpr Add Expr Expr
+  | BBinExpr BinOp Expr Expr
     deriving (Show, Eq)
     
+data ABinOp
+  = Add
+  | Mul
+  | Sub
+  | Div
+  deriving (Show, Eq)
 
-data RBinOp
+data BinOp
   = Equ
   | Greater 
   | GreaterEqu
   | Less
   | LessEqu
   | NotEqu
+  | Not
+  | And
+  | Or
     deriving (Show)
 
 -- data ABinOp 
