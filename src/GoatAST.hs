@@ -17,9 +17,9 @@ data Expr
   | Num Float
   | Id Ident
   | BoolConst Bool
-  | Not Expr
+  | UnaryNot Expr
   | UnaryMinus Expr
-  | ABinExpr Add Expr Expr
+  | ABinExpr ABinOp Expr Expr
   | BBinExpr BinOp Expr Expr
     deriving (Show, Eq)
     
@@ -37,17 +37,10 @@ data BinOp
   | Less
   | LessEqu
   | NotEqu
-  | Not
   | And
   | Or
-    deriving (Show)
+    deriving (Show, Eq)
 
--- data ABinOp 
---   = Add
---   | Sub
---   | Mul
---   | Div
---     deriving (Show)
 
 data Decl 
   = Decl Ident BaseType

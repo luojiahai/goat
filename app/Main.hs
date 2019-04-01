@@ -3,6 +3,7 @@ module Main where
 import GoatAST
 import Data.Char
 import Text.Parsec
+import Text.Parsec.Expr
 import Text.Parsec.Language (emptyDef)
 import qualified Text.Parsec.Token as Q
 import System.Environment
@@ -25,6 +26,7 @@ lexer
     , Q.opLetter          = oneOf "+-*:/|&!<>"
     , Q.reservedNames     = [ "begin"
                             , "bool"
+                            , "call"
                             , "do"
                             , "else"
                             , "end"
@@ -70,6 +72,9 @@ parens     = Q.parens lexer
 squares    = Q.squares lexer
 reserved   = Q.reserved lexer
 reservedOp = Q.reservedOp lexer
+
+
+
 
 
 -----------------------------------------------------------------
@@ -156,13 +161,34 @@ pAsg
 --  are left-associative.
 -----------------------------------------------------------------
 
-pExp, pTerm, pFactor, pUminus, pNum, pIdent, pString :: Parser Expr
 
-pExp 
-  = (pString)
-    <|> (chainl1 pTerm pAddOp)
-    <?>
-    "expression"
+
+pExp, pTerm, pNum, pIdent, pString :: Parser Expr
+
+pExp = buildExpressionParser pOperators pTerm
+
+pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))          ]
+              ,[Infix  (reservedOp "*"   >> return (ABinExpr Mul        )) AssocLeft,
+                Infix  (reservedOp "/"   >> return (ABinExpr Div        )) AssocLeft]
+              ,[Infix  (reservedOp "+"   >> return (ABinExpr Add        )) AssocLeft,
+                Infix  (reservedOp "-"   >> return (ABinExpr Sub        )) AssocLeft]
+              ,[Prefix (reservedOp "!"   >> return (UnaryNot            ))          ]
+              ,[Infix  (reservedOp "&&"  >> return (BBinExpr And        )) AssocLeft,
+                Infix  (reservedOp "||"  >> return (BBinExpr Or         )) AssocLeft,
+                Infix  (reservedOp ">"   >> return (BBinExpr Greater    )) AssocLeft,
+                Infix  (reservedOp ">="  >> return (BBinExpr GreaterEqu )) AssocLeft,
+                Infix  (reservedOp "<"   >> return (BBinExpr Less       )) AssocLeft,
+                Infix  (reservedOp "<="  >> return (BBinExpr LessEqu    )) AssocLeft,
+                Infix  (reservedOp "!="  >> return (BBinExpr NotEqu     )) AssocLeft]
+              ]
+
+pTerm = parens pExp
+      <|> (pString)
+      <|> pNum 
+      <|> pIdent
+      <|> (reserved "true"  >> return (BoolConst True))
+      <|> (reserved "false" >> return (BoolConst False))
+
 
 pString 
   = do
@@ -172,48 +198,6 @@ pString
       return (StrConst str)
     <?>
     "string"
-
-pAddOp, pMulOp :: Parser (Expr -> Expr -> Expr)
-
-
-pAddOp
-  = do 
-      reservedOp "+"
-      return Add
-    <|>
-    do
-      reservedOp "-"
-      return Sub
-
-pTerm 
-  = chainl1 pFactor pMulOp
-    <?>
-    "\"term\""
-
-pMulOp
-  = do 
-      reservedOp "*"
-      return Mul
-    <|>
-    do
-      reservedOp "/"
-      return Div
-        
-
-
-
-
-
-pFactor
-  = choice [pUminus, parens pExp, pNum, pIdent]
-    <?> 
-    "\"factor\""
-
-pUminus
-  = do 
-      reservedOp "-"
-      exp <- pFactor
-      return (UnaryMinus exp)
 
 pNum 
     = do
