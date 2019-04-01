@@ -9,12 +9,14 @@ data BaseType
 
 data Lvalue 
   = LId Ident
+  | LIdArray Ident [Int]
     deriving (Show, Eq)
 
 data Expr
   = IntConst Int
   | StrConst String
   | Num Float
+  | IdArray Ident [Int]
   | Id Ident
   | BoolConst Bool
   | UnaryNot Expr

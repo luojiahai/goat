@@ -222,7 +222,7 @@ pCall
   = do
       reserved "call"
       id <- identifier
-      exp <- parens (many1 pExp)
+      exp <- parens (pExp `sepBy` (symbol ","))
       semi
       return (Call id exp)
 
