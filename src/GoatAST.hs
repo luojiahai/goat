@@ -14,7 +14,6 @@ data BaseType
 
 data Lvalue 
   = LId IdName
-
     deriving (Show, Eq)
 
 data Expr
@@ -22,7 +21,6 @@ data Expr
   | StrConst String
   | Num Float
   | Id IdName
-
   | BoolConst Bool
   | UnaryNot Expr
   | UnaryMinus Expr
