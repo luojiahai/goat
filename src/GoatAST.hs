@@ -3,23 +3,26 @@ module GoatAST where
 
 type Ident = String 
 
+data IdName
+  = Name Ident
+  | NameWithShape Ident [Expr]
+    deriving (Show, Eq)
+
 data BaseType 
   = BoolType | IntType | FloatType
     deriving (Show, Eq)
 
-data Shape
-  = Shape [Expr]
-    deriving (Show, Eq)
-
 data Lvalue 
-  = LId Ident Shape
+  = LId IdName
+
     deriving (Show, Eq)
 
 data Expr
   = IntConst Int
   | StrConst String
   | Num Float
-  | Id Ident Shape
+  | Id IdName
+
   | BoolConst Bool
   | UnaryNot Expr
   | UnaryMinus Expr
@@ -47,7 +50,8 @@ data BinOp
 
 
 data Decl 
-  = Decl Ident BaseType Shape
+  = Decl IdName
+ BaseType
     deriving (Show, Eq)
 
 data Stmt 

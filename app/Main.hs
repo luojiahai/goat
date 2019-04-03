@@ -2,7 +2,7 @@ module Main where
 
 import GoatAST
 import Data.Char
--- import Debug.Trace
+import Debug.Trace
 import Text.Parsec
 import Text.Parsec.Expr
 import Text.Parsec.Language (emptyDef)
@@ -88,7 +88,7 @@ pProg :: Parser GoatProgram
 pProg
   = do
       procs <- many1 pProc
-      return (GoatProgram procs)
+      return $ GoatProgram procs
       
 
 pProc :: Parser Procedure
@@ -98,17 +98,15 @@ pProc
       do
         (do
           reserved "main"
-          -- Keep a record of how many mains are there
-          modifyState(+1)
           parens (return ())
           (decls,stmts) <- pProgBody
-          return (Main decls stmts))
+          return $ Main decls stmts)
         <|>
         (do
           ident <- identifier
           params <- parens (pParam `sepBy` (symbol ","))
           (decls,stmts) <- pProgBody
-          return (Procedure ident params decls stmts))
+          return $ Procedure ident params decls stmts)
 
 pParam :: Parser Param
 pParam
@@ -116,7 +114,7 @@ pParam
       indicator <- pParamIndicator
       basetype <- pBaseType
       ident <- identifier
-      return (Param indicator basetype ident)
+      return $ Param indicator basetype ident
       
 
 pParamIndicator :: Parser ParamIndicator
@@ -145,11 +143,10 @@ pDecl :: Parser Decl
 pDecl
   = do
       basetype <- pBaseType
-      ident <- identifier
-      shape <- pShape
+      identT <- pIdentType
       whiteSpace
       semi
-      return (Decl ident basetype shape)
+      return $ Decl identT basetype
 
 pBaseType :: Parser BaseType
 pBaseType
@@ -175,14 +172,14 @@ pRead
       reserved "read"
       lvalue <- pLvalue
       semi
-      return (Read lvalue)
+      return $ Read lvalue
 
 pWrite
   = do 
       reserved "write"
       exp <- (pString <|> pExp)
       semi
-      return (Write exp)
+      return $ Write exp
 
 pAsg
   = do
@@ -190,7 +187,7 @@ pAsg
       reservedOp ":="
       rvalue <- pExp
       semi
-      return (Assign lvalue rvalue)
+      return $ Assign lvalue rvalue
 
 pIf
   = do
@@ -203,12 +200,12 @@ pIf
           reserved "else"
           stmt2 <- many1 pStmt
           reserved "fi"
-          return (IfElse cond stmt1 stmt2)
+          return $ IfElse cond stmt1 stmt2
         )
         <|>
         (do
           reserved "fi"
-          return (If cond stmt1)
+          return $ If cond stmt1
         )
 
 pWhile
@@ -218,7 +215,7 @@ pWhile
       reserved "do"
       stmt <- many1 pStmt
       reserved "od"
-      return (While cond stmt)
+      return $ While cond stmt
 
 pCall
   = do
@@ -226,8 +223,21 @@ pCall
       id <- identifier
       exp <- parens (pExp `sepBy` (symbol ","))
       semi
-      return (Call id exp)
+      return $ Call id exp
 
+pIdentType :: Parser IdName
+pIdentType
+  = do
+      ident <- identifier
+      do
+        (do
+          shape <- brackets (pExp `sepBy1` (symbol ","))
+          case length shape > 0 && length shape <= 2 of
+            True -> return $ NameWithShape ident shape
+            False -> fail ("Unsupported id dimention of " ++ ident ++ show (shape)))
+        <|>
+        (do
+          return $ Name ident)
 -----------------------------------------------------------------
 --  pExp is the main parser for expressions. It takes into account
 --  the operator precedences and the fact that the binary operators
@@ -269,7 +279,7 @@ pString
       char '"'
       str <- many (satisfy (/= '"'))
       char '"'
-      return (StrConst str)
+      return $ StrConst str
     <?>
     "string"
 
@@ -281,39 +291,29 @@ pNum
                     char '.'
                     ds <- many1 digit
                     let val = read (ws ++ ('.' : ds)) :: Float
-                    return (Num val)
+                    return $ Num val
                   )
                   <|>
                   (do 
-                    return (IntConst (read ws :: Int))                    
+                    return $ IntConst (read ws :: Int)                   
                   )
                 )
         <?>
         "Numer"
 
-pIdent 
+pIdent
   = do
-      ident <- identifier
-      shape <- pShape
-      return (Id ident shape)
+      identT <- pIdentType
+      return $ Id identT
     <?>
     "identifier"
-
-pShape :: Parser Shape
-pShape
-  = do
-      shape <- brackets (pExp `sepBy1` (symbol ","))
-      return (Shape shape)
-      <|>
-      return (Shape [])
 
 
 pLvalue :: Parser Lvalue
 pLvalue
   = do
-      ident <- identifier
-      shape <- pShape
-      return (LId ident shape)
+      identT <- pIdentType
+      return $ LId identT
     <?>
     "lvalue"
 
@@ -329,12 +329,7 @@ pMain
   = do
       whiteSpace
       p <- pProg
-      mainCount <- getState
-      case mainCount == 1 of
-          False -> fail "Missing or duplicated main function"
-          True -> do
-                    eof
-                    return p
+      return p
 
 
 
