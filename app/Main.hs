@@ -232,9 +232,10 @@ pIdentType
       do
         (do
           shape <- brackets (pExp `sepBy1` (symbol ","))
-          case length shape > 0 && length shape <= 2 of
+          let l = length shape
+          case l > 0 && l <= 2 of
             True -> return $ NameWithShape ident shape
-            False -> fail ("Unsupported id dimention of " ++ ident ++ show (shape)))
+            False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ ident ++ show (shape)))
         <|>
         (do
           return $ Name ident)
