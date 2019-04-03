@@ -143,7 +143,7 @@ pDecl :: Parser Decl
 pDecl
   = do
       basetype <- pBaseType
-      identT <- pIdentType
+      identT <- pIdentName
       whiteSpace
       semi
       return $ Decl identT basetype
@@ -225,8 +225,8 @@ pCall
       semi
       return $ Call id exp
 
-pIdentType :: Parser IdName
-pIdentType
+pIdentName :: Parser IdName
+pIdentName
   = do
       ident <- identifier
       do
@@ -304,7 +304,7 @@ pNum
 
 pIdent
   = do
-      identT <- pIdentType
+      identT <- pIdentName
       return $ Id identT
     <?>
     "identifier"
@@ -313,7 +313,7 @@ pIdent
 pLvalue :: Parser Lvalue
 pLvalue
   = do
-      identT <- pIdentType
+      identT <- pIdentName
       return $ LId identT
     <?>
     "lvalue"
