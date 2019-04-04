@@ -24,18 +24,10 @@ data Expr
   | BoolConst Bool
   | UnaryNot Expr
   | UnaryMinus Expr
-  | ABinExpr ABinOp Expr Expr
-  | BBinExpr BBinOp Expr Expr
+  | BinExpr BinOp Expr Expr
     deriving (Show, Eq)
     
-data ABinOp
-  = Add
-  | Mul
-  | Sub
-  | Div
-  deriving (Show, Eq)
-
-data BBinOp
+data BinOp
   = Equ
   | Greater 
   | GreaterEqu
@@ -44,6 +36,10 @@ data BBinOp
   | NotEqu
   | And
   | Or
+  | Add
+  | Mul
+  | Sub
+  | Div
     deriving (Show, Eq)
 
 

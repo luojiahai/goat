@@ -252,19 +252,19 @@ pExp, pTerm, pNum, pIdent, pString :: Parser Expr
 pExp = buildExpressionParser pOperators pTerm
 
 pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))          ]
-              ,[Infix  (reservedOp "*"   >> return (ABinExpr Mul        )) AssocLeft,
-                Infix  (reservedOp "/"   >> return (ABinExpr Div        )) AssocLeft]
-              ,[Infix  (reservedOp "+"   >> return (ABinExpr Add        )) AssocLeft,
-                Infix  (reservedOp "-"   >> return (ABinExpr Sub        )) AssocLeft]
+              ,[Infix  (reservedOp "*"   >> return (BinExpr Mul        )) AssocLeft,
+                Infix  (reservedOp "/"   >> return (BinExpr Div        )) AssocLeft]
+              ,[Infix  (reservedOp "+"   >> return (BinExpr Add        )) AssocLeft,
+                Infix  (reservedOp "-"   >> return (BinExpr Sub        )) AssocLeft]
               ,[Prefix (reservedOp "!"   >> return (UnaryNot            ))          ]
-              ,[Infix  (reservedOp ">="  >> return (BBinExpr GreaterEqu )) AssocLeft,
-                Infix  (reservedOp "<="  >> return (BBinExpr LessEqu    )) AssocLeft,
-                Infix  (reservedOp ">"   >> return (BBinExpr Greater    )) AssocLeft,
-                Infix  (reservedOp "<"   >> return (BBinExpr Less       )) AssocLeft,
-                Infix  (reservedOp "!="  >> return (BBinExpr NotEqu     )) AssocLeft]
-              ,[Infix  (reservedOp "&&"  >> return (BBinExpr And        )) AssocLeft,
-                Infix  (reservedOp "||"  >> return (BBinExpr Or         )) AssocLeft]
-              ,[Infix  (reservedOp "="   >> return  (BBinExpr Equ       )) AssocLeft]
+              ,[Infix  (reservedOp ">="  >> return (BinExpr GreaterEqu )) AssocLeft,
+                Infix  (reservedOp "<="  >> return (BinExpr LessEqu    )) AssocLeft,
+                Infix  (reservedOp ">"   >> return (BinExpr Greater    )) AssocLeft,
+                Infix  (reservedOp "<"   >> return (BinExpr Less       )) AssocLeft,
+                Infix  (reservedOp "!="  >> return (BinExpr NotEqu     )) AssocLeft]
+              ,[Infix  (reservedOp "&&"  >> return (BinExpr And        )) AssocLeft,
+                Infix  (reservedOp "||"  >> return (BinExpr Or         )) AssocLeft]
+              ,[Infix  (reservedOp "="   >> return (BinExpr Equ       )) AssocLeft]
               ]
 
 pTerm 
@@ -370,7 +370,7 @@ stmtPrinter' _ (Read (LId idName))
 
 stmtPrinter' _ (Write expr)
   = do
-    putStr ("write ")
+    putStr ("write (")
     exprPrinter expr
     putStrLn (";")
 
@@ -420,35 +420,25 @@ exprPrinter (Id idname) = idNamePrinter idname
 exprPrinter (BoolConst bool) = putStr (show bool)
 exprPrinter (UnaryNot expr) = (putStr "!" >> exprPrinter expr)
 exprPrinter (UnaryMinus expr) = (putStr "-" >> exprPrinter expr)
-exprPrinter (ABinExpr abinop expr1 expr2) 
+exprPrinter (BinExpr binop expr1 expr2) 
   = do
       exprParenPrinter expr1
-      aBinOpPrinter abinop
+      binOpPrinter binop
       exprParenPrinter expr2
 
-exprPrinter (BBinExpr bbinop expr1 expr2)
-  = do
-      exprParenPrinter expr1
-      bBinOpPrinter bbinop
-      exprParenPrinter expr2
 -- Will check if the expr needs to be surrend by parens
 exprParenPrinter :: Expr -> IO()
 exprParenPrinter expr
   = case expr of
-      ABinExpr _ _ _ -> exprParenPrinter' expr
-      BBinExpr _ _ _ -> exprParenPrinter' expr
+      BinExpr _ _ _ -> do
+                          putStr("(")
+                          exprPrinter expr
+                          putStr(")")
       _ -> exprPrinter expr
 
-exprParenPrinter' :: Expr -> IO()
-exprParenPrinter' expr
-  = do
-      putStr("(")
-      exprPrinter expr
-      putStr(")")
-
-bBinOpPrinter :: BBinOp -> IO()
-bBinOpPrinter bbinop
-  = case bbinop of
+binOpPrinter :: BinOp -> IO()
+binOpPrinter binop
+  = case binop of
       Equ -> putStr " = "
       Greater -> putStr " > "
       GreaterEqu -> putStr " >= "
@@ -457,14 +447,11 @@ bBinOpPrinter bbinop
       NotEqu -> putStr " != "
       And -> putStr " && "
       Or -> putStr " || "
-
-aBinOpPrinter :: ABinOp -> IO()
-aBinOpPrinter abinop
-  = case abinop of
       Add -> putStr " + "
       Mul -> putStr " * "
       Sub -> putStr " - "
       Div -> putStr " / "
+
 
 paramPrinter :: String -> Param -> IO()
 paramPrinter _ (Param paramIndicator basetype id)
