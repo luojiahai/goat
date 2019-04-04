@@ -25,7 +25,7 @@ data Expr
   | UnaryNot Expr
   | UnaryMinus Expr
   | ABinExpr ABinOp Expr Expr
-  | BBinExpr BinOp Expr Expr
+  | BBinExpr BBinOp Expr Expr
     deriving (Show, Eq)
     
 data ABinOp
@@ -35,7 +35,7 @@ data ABinOp
   | Div
   deriving (Show, Eq)
 
-data BinOp
+data BBinOp
   = Equ
   | Greater 
   | GreaterEqu
