@@ -324,9 +324,11 @@ pLvalue
 
 prettyPrinter :: GoatProgram -> IO()
 prettyPrinter (GoatProgram []) = return ()
+prettyPrinter (GoatProgram [x]) = procedurePrinter x
 prettyPrinter (GoatProgram (x:xs))
   = do
       procedurePrinter x
+      putStrLn ""-- Two procedure should be sep by a blank line
       prettyPrinter (GoatProgram xs)
 
 procedurePrinter :: Procedure -> IO()
