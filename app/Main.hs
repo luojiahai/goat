@@ -422,15 +422,29 @@ exprPrinter (UnaryNot expr) = (putStr "!" >> exprPrinter expr)
 exprPrinter (UnaryMinus expr) = (putStr "-" >> exprPrinter expr)
 exprPrinter (ABinExpr abinop expr1 expr2) 
   = do
-      exprPrinter expr1
+      exprParenPrinter expr1
       aBinOpPrinter abinop
-      exprPrinter expr2
-      
+      exprParenPrinter expr2
+
 exprPrinter (BBinExpr bbinop expr1 expr2)
   = do
-      exprPrinter expr1
+      exprParenPrinter expr1
       bBinOpPrinter bbinop
-      exprPrinter expr2
+      exprParenPrinter expr2
+-- Will check if the expr needs to be surrend by parens
+exprParenPrinter :: Expr -> IO()
+exprParenPrinter expr
+  = case expr of
+      ABinExpr _ _ _ -> exprParenPrinter' expr
+      BBinExpr _ _ _ -> exprParenPrinter' expr
+      _ -> exprPrinter expr
+
+exprParenPrinter' :: Expr -> IO()
+exprParenPrinter' expr
+  = do
+      putStr("(")
+      exprPrinter expr
+      putStr(")")
 
 bBinOpPrinter :: BBinOp -> IO()
 bBinOpPrinter bbinop
