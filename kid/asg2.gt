@@ -13,7 +13,7 @@ begin
         a := 3;
     fi
     while n > 1 do
-        call p(n);
+        call p(n[2,1]);
     od
     write a;
     write "\n";

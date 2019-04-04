@@ -318,6 +318,49 @@ pLvalue
     <?>
     "lvalue"
 
+-----------------------------------------------------------------
+-- pretty printer
+-----------------------------------------------------------------
+
+prettyPrinter :: GoatProgram -> IO()
+prettyPrinter (GoatProgram []) = return ()
+prettyPrinter (GoatProgram (x:xs))
+  = do
+      procedurePrinter x
+      prettyPrinter (GoatProgram xs)
+
+procedurePrinter :: Procedure -> IO()
+procedurePrinter (Main decl stmt) = procedurePrinter (Procedure "main" [] decl stmt)
+procedurePrinter (Procedure id param decl stmt)
+  = do
+      putStr "proc "
+      putStr $ id ++ " ("
+      sepPrinter ", " param paramPrinter
+      putStrLn ")"
+
+-- print list of item sperated with sep sign and custom printing function
+sepPrinter :: String -> [a] -> (a -> IO()) -> IO()
+sepPrinter _ [] _ = return ()
+sepPrinter _ [x] printer = printer x 
+sepPrinter sep (x:xs) printer 
+  = do 
+      printer x 
+      putStr sep
+      sepPrinter sep xs printer
+
+paramPrinter :: Param -> IO()
+paramPrinter (Param paramIndicator basetype id)
+  = do
+      case paramIndicator of
+        Val -> putStr "val "
+        Ref -> putStr "ref "
+      case basetype of 
+        BoolType -> putStr "bool "
+        IntType -> putStr "int "
+        FloatType -> putStr "float "
+      putStr id
+
+
 
 
 
@@ -344,7 +387,11 @@ main
       input <- readFile (head args)
       let output = runParser pMain 0 "" input
       case output of
-        Right ast -> print ast
+        Right ast -> do
+                      print ast
+                      print "-----Pretty printer------"
+                      prettyPrinter ast
+
         Left  err -> do
                       putStr "Parse error at "
                       print err

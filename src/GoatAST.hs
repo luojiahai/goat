@@ -48,8 +48,7 @@ data BinOp
 
 
 data Decl 
-  = Decl IdName
- BaseType
+  = Decl IdName BaseType
     deriving (Show, Eq)
 
 data Stmt 
