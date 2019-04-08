@@ -376,7 +376,7 @@ stmtPrinter' _ (Read (LId idName))
 
 stmtPrinter' _ (Write expr)
   = do
-    putStr ("write (")
+    putStr ("write ")
     exprPrinter expr
     putStrLn (";")
 
