@@ -116,11 +116,13 @@ pParam
       ident <- identifier
       return $ Param indicator basetype ident
       
+      
 
 pParamIndicator :: Parser ParamIndicator
 pParamIndicator
   =   (reserved "val" >> return Val)
   <|> (reserved "ref" >> return Ref)
+  <?> "paramindicator"
 
 -----------------------------------------------------------------
 --  pProgBody looks for a sequence of declarations followed by a
@@ -155,6 +157,8 @@ pBaseType
     (reserved "int" >> return IntType)
     <|>
     (reserved "float" >> return FloatType)
+    <?>
+    "basetype"
 
 
 -----------------------------------------------------------------
@@ -166,6 +170,8 @@ pStmt, pRead, pWrite, pAsg, pIf, pWhile, pCall :: Parser Stmt
 
 pStmt 
   = choice [pRead, pWrite, pAsg, pIf, pWhile, pCall]
+    <?>
+    "statement"
 
 pRead
   = do 
@@ -269,7 +275,7 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))      
 
 pTerm 
   = parens pExp
-  <|> (pString)
+  <|> pString
   <|> pNum 
   <|> pIdent
   <|> (reserved "true"  >> return (BoolConst True))
