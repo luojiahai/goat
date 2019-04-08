@@ -377,7 +377,7 @@ stmtPrinter' _ (Write expr)
 
 stmtPrinter' _ (Call id exprs)
   = do
-    putStr ("call (")
+    putStr ("call " ++ show id ++ "(")
     sepPrinterNoIdent exprPrinter exprs ", "
     putStrLn (");")
   
@@ -523,25 +523,38 @@ main
   = do
       progname <- getProgName
       args <- getArgs
-      checkArgs progname args
-      input <- readFile (head args)
-      let output = runParser pMain 0 "" input
-      case output of
-        Right ast -> do
-                      print ast
-                      print "-----Pretty printer------"
-                      prettyPrinter ast
+      processArgs progname args
 
-        Left  err -> do
-                      putStr "Parse error at "
-                      print err
 
-checkArgs :: String -> [String] -> IO ()
-checkArgs _ [filename]
-   = return ()
-checkArgs progname _
-   = do
-      putStrLn ("Usage: " ++ progname ++ " filename\n\n")
+processArgs :: String -> [String] -> IO ()
+
+processArgs progname []
+  = do
+      putStrLn ("Usage: " ++ progname ++ " [-p] filename")
       exitWith (ExitFailure 1)
+
+processArgs progname [filename]
+  = do
+      putStrLn ("Sorry, cannot generate code yet")
+      exitWith (ExitFailure 1)
+
+processArgs progname (x:y:xs)
+  = do
+      let l = length xs
+      case x == "-p" && l == 0 of
+        True -> do
+                  input <- readFile y
+                  let output = runParser pMain 0 "" input
+                  case output of
+                    Right ast -> do
+                                  prettyPrinter ast
+                    Left  err -> do
+                                  putStr "Parse error at "
+                                  print err
+        False -> do
+                  putStrLn ("Unsupported operation or too many arguments")
+                  putStrLn ("Usage: " ++ progname ++ " [-p] filename")
+                  exitWith (ExitFailure 1)
+
 
 

@@ -1,1 +1,0 @@
-stack exec -- alex Goat.x -o app/Main.hs && stack build && stack exec goat-exe < data/test.txt
