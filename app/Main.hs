@@ -377,7 +377,7 @@ stmtPrinter' _ (Write expr)
 
 stmtPrinter' _ (Call id exprs)
   = do
-    putStr ("call " ++ show id ++ "(")
+    putStr ("call " ++ id ++ "(")
     sepPrinterNoIdent exprPrinter exprs ", "
     putStrLn (");")
   
