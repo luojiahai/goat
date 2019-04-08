@@ -29,7 +29,6 @@ write "writing a string!";
 write 3 * (7 -5) / a;
 if m=0 then call p(n); fi
 else
- m := n -
-m; m := m - 1 ;
+ m := n -m; m := m - 1 ;
 fi od od
 end
