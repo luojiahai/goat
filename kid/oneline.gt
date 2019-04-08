@@ -1,0 +1,1 @@
+procq(valfloatx,refintk)intn;floaty;boola[8];begina[7]:=true;k:=42;endprocp(refinti)begini:=6*i+4-i;endprocmain()intm;intn;beginreadn;while((((n))))>1dom:=n;whilem>0doifm>0thenn:=n-1;m:=m-1;x:=1+2+3;write3*7+5-3/2*12*n;write"writingastring!";write3*(7-5)/a;ifm=0thencallp(n);fielsem:=n-m;m:=m-1;fiododend
