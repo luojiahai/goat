@@ -38,7 +38,6 @@ sepPrinter indent printer (x:xs) sep =
 sepPrinterNoIdent :: (a -> IO()) -> [a] -> String  -> IO()
 sepPrinterNoIdent printer xs sep = sepPrinter "" (\_ -> printer) xs sep
 
-
 -----------------------------------------------------------------
 -- all other subprinters
 -----------------------------------------------------------------
@@ -58,7 +57,7 @@ procedurePrinter (Procedure id params decls stmts) =
     putStrLn "end"
 
 -- A printer that can handle priting a single parameter in proc 
-paramPrinter :: String -> Param -> IO()
+paramPrinter :: Param -> IO()
 paramPrinter (Param paramIndicator basetype id) = 
   do
     case paramIndicator of
