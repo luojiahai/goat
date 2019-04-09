@@ -51,48 +51,46 @@ symbol     = Q.symbol lexer
 strliteral    = Q.stringLiteral lexer
 
 -----------------------------------------------------------------
---  pProg is the topmost parsing function. It looks for a program
---  header "proc main()", followed by the program body.
+-- pProg is the topmost parsing function. It looks for a list of
+-- program headers, e.g. "proc main()", followed by the program body.
 -----------------------------------------------------------------
-
 pProg :: Parser GoatProgram
-pProg
-  = do
-      procs <- many1 pProc
-      return $ GoatProgram procs
+pProg = 
+  do
+    procs <- many1 pProc
+    return $ GoatProgram procs
       
-
 pProc :: Parser Procedure
-pProc
-  = do
-      reserved "proc"
+pProc =
+  do
+    reserved "proc"
+    do
+      reserved "main"
+      parens (return ())
+      (decls,stmts) <- pProgBody
+      return $ Main decls stmts
+      <|>
       do
-        reserved "main"
-        parens (return ())
+        ident <- identifier
+        params <- parens (pParam `sepBy` (symbol ","))
         (decls,stmts) <- pProgBody
-        return $ Main decls stmts
-        <|>
-        do
-          ident <- identifier
-          params <- parens (pParam `sepBy` (symbol ","))
-          (decls,stmts) <- pProgBody
-          return $ Procedure ident params decls stmts
+        return $ Procedure ident params decls stmts
 
 pParam :: Parser Param
-pParam
-  = do
-      indicator <- pParamIndicator
-      basetype <- pBaseType
-      ident <- identifier
-      return $ Param indicator basetype ident
+pParam = 
+  do
+    indicator <- pParamIndicator
+    basetype <- pBaseType
+    ident <- identifier
+    return $ Param indicator basetype ident
       
-      
-
 pParamIndicator :: Parser ParamIndicator
-pParamIndicator
-  =   (reserved "val" >> return Val)
-  <|> (reserved "ref" >> return Ref)
-  <?> "paramindicator"
+pParamIndicator =
+  (reserved "val" >> return Val)
+  <|> 
+  (reserved "ref" >> return Ref)
+  <?> 
+  "paramindicator"
 
 -----------------------------------------------------------------
 --  pProgBody looks for a sequence of declarations followed by a
@@ -100,40 +98,36 @@ pParamIndicator
 -----------------------------------------------------------------
 
 pProgBody :: Parser ([Decl],[Stmt])
-pProgBody
-  = do
-      decls <- many pDecl
-      reserved "begin"
-      stmts <- many1 pStmt
-      reserved "end"
-      return (decls, stmts)
-    <?> 
-    "program body"
-
-
-
+pProgBody = 
+  do
+    decls <- many pDecl
+    reserved "begin"
+    stmts <- many1 pStmt
+    reserved "end"
+    return (decls, stmts)
+  <?> 
+  "program body"
 
 pDecl :: Parser Decl
-pDecl
-  = do
-      basetype <- pBaseType
-      identT <- pIdentName
-      whiteSpace
-      semi
-      return $ Decl identT basetype
-    <?> 
-    "declaration"
+pDecl = 
+  do
+    basetype <- pBaseType
+    identT <- pIdentName
+    whiteSpace
+    semi
+    return $ Decl identT basetype
+  <?> 
+  "declaration"
 
 pBaseType :: Parser BaseType
-pBaseType
-  = (reserved "bool" >> return BoolType)
-    <|>
-    (reserved "int" >> return IntType)
-    <|>
-    (reserved "float" >> return FloatType)
-    <?>
-    "basetype"
-
+pBaseType = 
+  (reserved "bool" >> return BoolType)
+  <|> 
+  (reserved "int" >> return IntType)
+  <|> 
+  (reserved "float" >> return FloatType)
+  <?> 
+  "basetype"
 
 -----------------------------------------------------------------
 --  pStmt is the main parser for statements. It wants to recognise
@@ -142,88 +136,92 @@ pBaseType
 
 pStmt, pRead, pWrite, pAsg, pIf, pWhile, pCall :: Parser Stmt
 
-pStmt 
-  = choice [pRead, pWrite, pAsg, pIf, pWhile, pCall]
-    <?>
-    "statement"
+pStmt = 
+  choice [pRead, pWrite, pAsg, pIf, pWhile, pCall]
+  <?> 
+  "statement"
 
-pRead
-  = do 
-      reserved "read"
-      lvalue <- pLvalue
-      semi
-      return $ Read lvalue
-    <?>
-    "read"
+pRead = 
+  do 
+    reserved "read"
+    lvalue <- pLvalue
+    semi
+    return $ Read lvalue
+  <?>
+  "read"
 
-pWrite
-  = do 
-      reserved "write"
-      exp <- (pString <|> pExp)
-      semi
-      return $ Write exp
-    <?>
-    "write"
+pWrite = 
+  do 
+    reserved "write"
+    exp <- (pString <|> pExp)
+    semi
+    return $ Write exp
+  <?>
+  "write"
 
-pAsg
-  = do
-      lvalue <- pLvalue
-      reservedOp ":="
-      rvalue <- pExp
-      semi
-      return $ Assign lvalue rvalue
-    <?>
-    "assignment"
+pAsg = 
+  do
+    lvalue <- pLvalue
+    reservedOp ":="
+    rvalue <- pExp
+    semi
+    return $ Assign lvalue rvalue
+  <?>
+  "assignment"
 
-pIf
-  = do
-      reserved "if"
-      cond <- pExp
-      reserved "then"
-      stmt1 <- many1 pStmt
+pIf = 
+  do
+    reserved "if"
+    cond <- pExp
+    reserved "then"
+    stmt1 <- many1 pStmt
+    do
+      reserved "else"
+      stmt2 <- many1 pStmt
+      reserved "fi"
+      return $ IfElse cond stmt1 stmt2
+      <|>
       do
-        reserved "else"
-        stmt2 <- many1 pStmt
         reserved "fi"
-        return $ IfElse cond stmt1 stmt2
-        <|>
-        do
-          reserved "fi"
-          return $ If cond stmt1
-    <?>
-    "if"
-pWhile
-  = do
-      reserved "while"
-      cond <- pExp
-      reserved "do"
-      stmt <- many1 pStmt
-      reserved "od"
-      return $ While cond stmt
-    <?>
-    "while"
-pCall
-  = do
-      reserved "call"
-      id <- identifier
-      exp <- parens (pExp `sepBy` (symbol ","))
-      semi
-      return $ Call id exp
-    <?>
-    "call"
+        return $ If cond stmt1
+  <?>
+  "if"
+
+pWhile = 
+  do
+    reserved "while"
+    cond <- pExp
+    reserved "do"
+    stmt <- many1 pStmt
+    reserved "od"
+    return $ While cond stmt
+  <?>
+  "while"
+
+pCall = 
+  do
+    reserved "call"
+    id <- identifier
+    exp <- parens (pExp `sepBy` (symbol ","))
+    semi
+    return $ Call id exp
+  <?>
+  "call"
     
+-- Pariser for <id>, <id> [<expr>], <id> [<expr>,<expr>]
+-- Limit the amount of dimention by measureing the length.
 pIdentName :: Parser IdName
-pIdentName
-  = do
-      ident <- identifier
-      do
-        shape <- brackets (pExp `sepBy1` (symbol ","))
-        let l = length shape
-        case l > 0 && l <= 2 of
-          True -> return $ NameWithShape ident shape
-          False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ ident ++ show (shape))
-        <|>
-        (return $ Name ident)
+pIdentName = 
+  do
+    ident <- identifier
+    do
+      shape <- brackets (pExp `sepBy1` (symbol ","))
+      let l = length shape
+      case l > 0 && l <= 2 of
+        True -> return $ NameWithShape ident shape
+        False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ ident ++ show (shape))
+      <|>
+      (return $ Name ident)
 
 -----------------------------------------------------------------
 --  pExp is the main parser for expressions. It takes into account
@@ -234,12 +232,12 @@ pExp, pTerm, pNum, pIdent, pString :: Parser Expr
 
 pExp = buildExpressionParser pOperators pTerm
 
-pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))          ]
+pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus         ))          ]
               ,[Infix  (reservedOp "*"   >> return (BinExpr Mul        )) AssocLeft,
                 Infix  (reservedOp "/"   >> return (BinExpr Div        )) AssocLeft]
               ,[Infix  (reservedOp "+"   >> return (BinExpr Add        )) AssocLeft,
                 Infix  (reservedOp "-"   >> return (BinExpr Sub        )) AssocLeft]
-              ,[Prefix (reservedOp "!"   >> return (UnaryNot            ))          ]
+              ,[Prefix (reservedOp "!"   >> return (UnaryNot           ))          ]
               ,[Infix  (reservedOp ">="  >> return (BinExpr GreaterEqu )) AssocLeft,
                 Infix  (reservedOp "<="  >> return (BinExpr LessEqu    )) AssocLeft,
                 Infix  (reservedOp ">"   >> return (BinExpr Greater    )) AssocLeft,
@@ -247,102 +245,111 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnaryMinus          ))      
                 Infix  (reservedOp "!="  >> return (BinExpr NotEqu     )) AssocLeft]
               ,[Infix  (reservedOp "&&"  >> return (BinExpr And        )) AssocLeft,
                 Infix  (reservedOp "||"  >> return (BinExpr Or         )) AssocLeft]
-              ,[Infix  (reservedOp "="   >> return (BinExpr Equ       )) AssocLeft]
+              ,[Infix  (reservedOp "="   >> return (BinExpr Equ        )) AssocLeft]
               ]
 
-pTerm 
-  = parens pExp
-  <|> pString
-  <|> pNum 
-  <|> pIdent
-  <|> (reserved "true"  >> return (BoolConst True))
-  <|> (reserved "false" >> return (BoolConst False))
+pTerm = 
+  parens pExp
+  <|> 
+  pString
+  <|> 
+  pNum 
+  <|> 
+  pIdent
+  <|> 
+  pBool
+  <?>
+  "term" 
 
-pString
-  = liftM StrConst strliteral
+pBool = 
+  (reserved "true"  >> return (BoolConst True))
+  <|>
+  (reserved "false" >> return (BoolConst False))
 
-pNum 
-  = do
-      ws <- many1 digit
-      lexeme 
-        (try
-          (do 
-            char '.'
-            ds <- many1 digit
-            let val = read (ws ++ ('.' : ds)) :: Float
-            return $ Num val
-          )
-          <|>
-          (do 
-            return $ IntConst (read ws :: Int)                   
-          )
+pString = 
+  liftM StrConst strliteral
+
+pNum =
+  do
+    ws <- many1 digit
+    lexeme 
+      (try
+        (do 
+          char '.'
+          ds <- many1 digit
+          let val = read (ws ++ ('.' : ds)) :: Float
+          return $ Num val
         )
-      <?>
-      "Numer"
-
-pIdent
-  = do
-      identT <- pIdentName
-      return $ Id identT
+        <|>
+        (do 
+          return $ IntConst (read ws :: Int)                   
+        )
+      )
     <?>
-    "identifier"
+    "Numer"
+
+pIdent = 
+  do
+    identT <- pIdentName
+    return $ Id identT
+  <?>
+  "identifier"
 
 
 pLvalue :: Parser Lvalue
-pLvalue
-  = do
-      identT <- pIdentName
-      return $ LId identT
-    <?>
-    "lvalue"
+pLvalue = 
+  do
+    identT <- pIdentName
+    return $ LId identT
+  <?>
+  "lvalue"
+
 -----------------------------------------------------------------
 -- main
 -----------------------------------------------------------------
 
 pMain :: Parser GoatProgram
-pMain
-  = do
-      whiteSpace
-      p <- pProg
-      return p
+pMain = 
+  do
+    whiteSpace
+    p <- pProg
+    return p
 
 main :: IO ()
-main
-  = do
-      progname <- getProgName
-      args <- getArgs
-      processArgs progname args
-
+main = 
+  do
+    progname <- getProgName
+    args <- getArgs
+    processArgs progname args
 
 processArgs :: String -> [String] -> IO ()
+processArgs progname [] = 
+  do
+    putStrLn ("Usage: " ++ progname ++ " [-p] filename")
+    exitWith (ExitFailure 1)
 
-processArgs progname []
-  = do
-      putStrLn ("Usage: " ++ progname ++ " [-p] filename")
-      exitWith (ExitFailure 1)
+processArgs progname [filename] = 
+  do
+    putStrLn ("Sorry, cannot generate code yet")
+    exitWith (ExitFailure 1)
 
-processArgs progname [filename]
-  = do
-      putStrLn ("Sorry, cannot generate code yet")
-      exitWith (ExitFailure 1)
-
-processArgs progname (x:y:xs)
-  = do
-      let l = length xs
-      case x == "-p" && l == 0 of
-        True -> do
-                  input <- readFile y
-                  let output = runParser pMain 0 "" input
-                  case output of
-                    Right ast -> do
-                                  prettyPrinter ast
-                    Left  err -> do
-                                  putStr "Parse error at "
-                                  print err
-        False -> do
-                  putStrLn ("Unsupported operation or too many arguments")
-                  putStrLn ("Usage: " ++ progname ++ " [-p] filename")
-                  exitWith (ExitFailure 1)
+processArgs progname (x:y:xs) = 
+  do
+    let l = length xs
+    case x == "-p" && l == 0 of
+      True -> do
+                input <- readFile y
+                let output = runParser pMain 0 "" input
+                case output of
+                  Right ast -> do
+                                prettyPrinter ast
+                  Left  err -> do
+                                putStr "Parse error at "
+                                print err
+      False -> do
+                putStrLn ("Unsupported operation or too many arguments")
+                putStrLn ("Usage: " ++ progname ++ " [-p] filename")
+                exitWith (ExitFailure 1)
 
 
 
