@@ -7,6 +7,7 @@ import Data.Char
 import Text.Parsec
 import Text.Parsec.Expr
 import Text.Parsec.Language (emptyDef)
+import Control.Monad
 import qualified Text.Parsec.Token as Q
 import System.Environment
 import System.Exit
@@ -47,6 +48,7 @@ brackets   = Q.brackets lexer
 reserved   = Q.reserved lexer
 reservedOp = Q.reservedOp lexer
 symbol     = Q.symbol lexer
+strliteral    = Q.stringLiteral lexer
 
 -----------------------------------------------------------------
 --  pProg is the topmost parsing function. It looks for a program
@@ -172,6 +174,7 @@ pAsg
       return $ Assign lvalue rvalue
     <?>
     "assignment"
+
 pIf
   = do
       reserved "if"
@@ -255,32 +258,27 @@ pTerm
   <|> (reserved "true"  >> return (BoolConst True))
   <|> (reserved "false" >> return (BoolConst False))
 
-pString 
-  = do
-      char '"'
-      str <- many (satisfy (/= '"'))
-      char '"'
-      return $ StrConst str
-    <?>
-    "string"
+pString
+  = liftM StrConst strliteral
 
 pNum 
-    = do
-        ws <- many1 digit
-        lexeme (try
-                  (do 
-                    char '.'
-                    ds <- many1 digit
-                    let val = read (ws ++ ('.' : ds)) :: Float
-                    return $ Num val
-                  )
-                  <|>
-                  (do 
-                    return $ IntConst (read ws :: Int)                   
-                  )
-                )
-        <?>
-        "Numer"
+  = do
+      ws <- many1 digit
+      lexeme 
+        (try
+          (do 
+            char '.'
+            ds <- many1 digit
+            let val = read (ws ++ ('.' : ds)) :: Float
+            return $ Num val
+          )
+          <|>
+          (do 
+            return $ IntConst (read ws :: Int)                   
+          )
+        )
+      <?>
+      "Numer"
 
 pIdent
   = do
