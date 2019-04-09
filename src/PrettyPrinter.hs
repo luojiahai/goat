@@ -26,11 +26,11 @@ prettyPrinter (GoatProgram procs)
 sepPrinter :: String -> (String -> a -> IO()) -> [a] -> String  -> IO()
 sepPrinter _ _ [] _  = return ()
 sepPrinter indent printer [x] _ = printer indent x 
-sepPrinter indent printer (x:xs) sep
-  = do 
-      printer indent x 
-      putStr sep
-      sepPrinter indent printer xs sep
+sepPrinter indent printer (x:xs) sep = 
+  do 
+    printer indent x 
+    putStr sep
+    sepPrinter indent printer xs sep
 
 -- Some printer function does not take indent as input, but still wants
 -- to user setPrinter function. Thus we wrap it arround to take an additional
