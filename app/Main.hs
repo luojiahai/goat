@@ -129,6 +129,22 @@ pBaseType =
   <?> 
   "basetype"
 
+-- Pariser for <id>, <id> [<expr>], <id> [<expr>,<expr>]
+-- Limit the amount of dimention by measureing the length.
+pIdentName :: Parser IdName
+pIdentName = 
+  do
+    ident <- identifier
+    do
+      shape <- brackets (pExp `sepBy1` (symbol ","))
+      let l = length shape
+      case l > 0 && l <= 2 of
+        True -> return $ NameWithShape ident shape
+        False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ ident ++ show (shape))
+      <|>
+      (return $ Name ident)
+
+
 -----------------------------------------------------------------
 --  pStmt is the main parser for statements. It wants to recognise
 --  read and write statements, and assignments.
@@ -208,21 +224,6 @@ pCall =
   <?>
   "call"
     
--- Pariser for <id>, <id> [<expr>], <id> [<expr>,<expr>]
--- Limit the amount of dimention by measureing the length.
-pIdentName :: Parser IdName
-pIdentName = 
-  do
-    ident <- identifier
-    do
-      shape <- brackets (pExp `sepBy1` (symbol ","))
-      let l = length shape
-      case l > 0 && l <= 2 of
-        True -> return $ NameWithShape ident shape
-        False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ ident ++ show (shape))
-      <|>
-      (return $ Name ident)
-
 -----------------------------------------------------------------
 --  pExp is the main parser for expressions. It takes into account
 --  the operator precedences and the fact that the binary operators
