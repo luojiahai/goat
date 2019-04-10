@@ -333,23 +333,24 @@ processArgs progname [filename] =
     putStrLn ("Sorry, cannot generate code yet")
     exitWith (ExitFailure 1)
 
-processArgs progname (x:y:xs) = 
+processArgs progname ["-p",filename] = 
   do
-    let l = length xs
-    case x == "-p" && l == 0 of
-      True -> do
-                input <- readFile y
-                let output = runParser pMain 0 "" input
-                case output of
-                  Right ast -> do
-                                prettyPrinter ast
-                  Left  err -> do
-                                putStr "Parse error at "
-                                print err
-      False -> do
-                putStrLn ("Unsupported operation or too many arguments")
-                putStrLn ("Usage: " ++ progname ++ " [-p] filename")
-                exitWith (ExitFailure 1)
+    input <- readFile filename
+    let output = runParser pMain 0 "" input
+    case output of
+      Right ast -> do
+                    prettyPrinter ast
+                    exitWith ExitSuccess
+      Left  err -> do
+                    putStr "Parse error at "
+                    print err
+                    exitWith (ExitFailure 1)
+
+processArgs progname _ = 
+  do
+    putStrLn ("Unsupported operation or too many arguments")
+    putStrLn ("Usage: " ++ progname ++ " [-p] filename")
+    exitWith (ExitFailure 1)
 
 
 
