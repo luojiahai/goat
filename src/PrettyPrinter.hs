@@ -157,7 +157,7 @@ stmtPrinter' indentAcc (While expr stmts) =
 -- Expression printers. One for each type
 exprPrinter :: Expr -> IO()
 exprPrinter (IntConst i) = putStr (show i)
-exprPrinter (StrConst s) = putStr s
+exprPrinter (StrConst s) = putStr (show s)
 exprPrinter (Num f) = putStr (show f)
 exprPrinter (Id idname) = idNamePrinter idname
 exprPrinter (BoolConst bool) = putStr (show bool)

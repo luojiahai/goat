@@ -345,7 +345,7 @@ processArgs progname ["-p",filename] =
       Left  err -> do
                     putStr "Parse error at "
                     print err
-                    exitWith (ExitFailure 1)
+                    exitWith (ExitFailure 2)
 
 processArgs progname _ = 
   do
