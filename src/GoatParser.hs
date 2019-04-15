@@ -1,3 +1,15 @@
+---------------------------------------------------------------------
+-- COMP90045 Programming Language Implementation                   --
+-- Programming Project: Goat                                       --
+--                                                                 --
+-- Team: GOAT SIMULATOR                                            --
+-- Members:                                                        --
+--          Chenqin Zhang, Geoffrey Ka-Hoi Law, Yun Chen           --
+--          733301, 759218, 760419                                 --
+--          {chenqinz, glaw, yunc4}@student.unimelb.edu.au         --
+---------------------------------------------------------------------
+
+
 module GoatParser where
 
 import GoatAST
@@ -16,8 +28,8 @@ languageDef =
     , Token.nestedComments    = True
     , Token.identStart        = letter
     , Token.identLetter       = alphaNum <|> oneOf "_'"
-    , Token.opStart           = oneOf "+-*:/|&!<>"
-    , Token.opLetter          = oneOf "+-*:/|&!<>"
+    , Token.opStart           = oneOf "+-*:/|&!<>="
+    , Token.opLetter          = oneOf "+-*:/|&!<>="
     , Token.reservedNames     = [ "begin", "bool", "call", "do", "else", "end", "false"
                                 , "fi", "float", "if", "int", "od", "proc", "read"
                                 , "ref", "then", "true", "val", "while", "write"
@@ -238,9 +250,9 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))      
                 Infix  (reservedOp ">"   >> return (BinExpr Greater     )) AssocLeft,
                 Infix  (reservedOp "<"   >> return (BinExpr Less        )) AssocLeft,
                 Infix  (reservedOp "!="  >> return (BinExpr NotEqual    )) AssocLeft]
+              ,[Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocLeft]
               ,[Infix  (reservedOp "&&"  >> return (BinExpr And         )) AssocLeft,
                 Infix  (reservedOp "||"  >> return (BinExpr Or          )) AssocLeft]
-              ,[Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocLeft]
               ]
 
 -- Parses a term/num/identifier/string expression

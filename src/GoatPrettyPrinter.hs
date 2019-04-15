@@ -1,3 +1,15 @@
+---------------------------------------------------------------------
+-- COMP90045 Programming Language Implementation                   --
+-- Programming Project: Goat                                       --
+--                                                                 --
+-- Team: GOAT SIMULATOR                                            --
+-- Members:                                                        --
+--          Chenqin Zhang, Geoffrey Ka-Hoi Law, Yun Chen           --
+--          733301, 759218, 760419                                 --
+--          {chenqinz, glaw, yunc4}@student.unimelb.edu.au         --
+---------------------------------------------------------------------
+
+
 module GoatPrettyPrinter where
 
 import GoatAST
@@ -155,9 +167,10 @@ pprintExpr (IntConst i)      = putStr (show i)
 pprintExpr (StrConst s)      = putStr (show s)
 pprintExpr (FloatConst f)    = putStr (show f)
 pprintExpr (Id ident)       = pprintIdent ident
-pprintExpr (BoolConst bool)  = putStr (show bool)
 pprintExpr (UnExpr unop expr) = pprintUnExpr unop expr
 pprintExpr (BinExpr binop expr1 expr2) = pprintBinExpr binop expr1 expr2
+pprintExpr (BoolConst True)  = putStr "true"
+pprintExpr (BoolConst False)  = putStr "false"
 
 -- Prints a unary experssion
 pprintUnExpr :: UnOp -> Expr -> IO ()

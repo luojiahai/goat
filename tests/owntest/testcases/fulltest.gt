@@ -1,3 +1,6 @@
+# A Comprehensive test for all kinds of stuff.
+# A valid program, though
+
 proc q ( val
             float x
             , ref int
@@ -6,15 +9,17 @@ proc q ( val
 int n; float y;
 bool a[8];
 begin
-a[7] := true;
-k := 42;
+a_a[7] := true;
+k'a := 42;
 end
 proc p (ref int i)
 begin 
 i:=6*i+4-i;end
 proc                               main              ()
 int m;
-int n;
+# int n;
+#int
+#   	asd
 begin
 read n;
 while ((((n))                              ))>1 do
