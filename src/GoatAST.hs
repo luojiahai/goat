@@ -31,8 +31,9 @@ data UnOp
     deriving (Show, Eq)
 
 data BinOp
-  = Equal | Greater | GreaterEqual | Less | LessEqual | NotEqual
-  | And | Or | Add | Subtract | Multiply | Divide 
+  = Add | Subtract | Multiply | Divide 
+  | And | Or | Equal | Greater | Less 
+  | NotEqual | GreaterEqual | LessEqual
     deriving (Show, Eq)
 
 data Decl 
@@ -44,8 +45,8 @@ data Stmt
   | Read Lvalue
   | Write Expr
   | Call Ident [Expr]
-  | If Expr [Stmt]
-  | IfElse Expr [Stmt] [Stmt]
+  | IfThen Expr [Stmt]
+  | IfThenElse Expr [Stmt] [Stmt]
   | While Expr [Stmt]
     deriving (Show, Eq)
 

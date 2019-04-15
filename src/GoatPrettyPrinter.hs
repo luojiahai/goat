@@ -3,46 +3,39 @@ module GoatPrettyPrinter where
 import GoatAST
 
 
------------------------------------------------------------------
--- pretty printer
--- main printer
------------------------------------------------------------------
+-- Pre-defines number of spaces for an indentation
 indentation :: String
 indentation = "    "
 
- -- Two procedure should be sep by a blank line
-prettyPrint :: GoatProgram -> IO()
+-- Pretty-Prints a goat program
+--   Two procedure should be sep by a blank line
+prettyPrint :: GoatProgram -> IO ()
 prettyPrint (GoatProgram procs)
   = pprintBySepNoIndent printProc procs "\n"
 
------------------------------------------------------------------
--- helper functions
------------------------------------------------------------------
-
--- A printer that behaves similar to foldr, except not using accumulator.
--- Basically will call printer then print sep, except on last element
--- for which it will not print sep sign
-pprintBySep :: String -> (String -> a -> IO()) -> [a] -> String  -> IO()
+-- Processes a print action seperated by a seperator
+--   This is a helper function that behaves similar to foldr, 
+--   except not using accumulator.
+--   Basically this will call a print action then print sep, except on 
+--   last element for which it will not print sep sign.
+pprintBySep :: String -> (String -> a -> IO ()) -> [a] -> String  -> IO ()
 pprintBySep _ _ [] _  = return ()
-pprintBySep indent printer [x] _ = printer indent x 
-pprintBySep indent printer (x:xs) sep = 
+pprintBySep indent printAction [x] _ = printAction indent x 
+pprintBySep indent printAction (x:xs) sep = 
   do 
-    printer indent x 
+    printAction indent x 
     putStr sep
-    pprintBySep indent printer xs sep
+    pprintBySep indent printAction xs sep
 
--- Some printer function does not take indent as input, but still wants
--- to user setPrinter function. Thus we wrap it arround to take an additional
--- argument
-pprintBySepNoIndent :: (a -> IO()) -> [a] -> String  -> IO()
-pprintBySepNoIndent printer xs sep = pprintBySep "" (\_ -> printer) xs sep
+-- Processes a print action seperated by a seperator without indentations
+--   Some print actions does not take indent as input, but still wants
+--   to user setPrinter function. Thus we wrap it arround to take 
+--   an additional argument.
+pprintBySepNoIndent :: (a -> IO ()) -> [a] -> String  -> IO ()
+pprintBySepNoIndent printAction xs sep = pprintBySep "" (\_ -> printAction) xs sep
 
------------------------------------------------------------------
--- all other subprinters
------------------------------------------------------------------
-
--- procedure printers
-printProc :: Procedure -> IO()
+-- Prints a procedure
+printProc :: Procedure -> IO ()
 printProc (Main decl stmt) = printProc (Procedure "main" [] decl stmt)
 printProc (Procedure id prmts decls stmts) = 
   do
@@ -55,8 +48,9 @@ printProc (Procedure id prmts decls stmts) =
     pprintBySep indentation pprintStmt stmts ""
     putStrLn "end"
 
--- A printer that can handle priting a single prmteter in proc 
-pprintPrmt :: Prmt -> IO()
+-- Prints a parameter
+--   This is a print action that can handle priting a single prmteter in a procedure.
+pprintPrmt :: Prmt -> IO ()
 pprintPrmt (Prmt prmtIndicator basetype id) = 
   do
     case prmtIndicator of
@@ -65,16 +59,16 @@ pprintPrmt (Prmt prmtIndicator basetype id) =
     pprintBaseType basetype
     putStr id
 
--- Printer for basetypes
-pprintBaseType :: BaseType -> IO()
+-- Prints a base type
+pprintBaseType :: BaseType -> IO ()
 pprintBaseType t =
   case t of
-    BoolType -> putStr "bool "
-    IntType -> putStr "int "
+    BoolType  -> putStr "bool "
+    IntType   -> putStr "int "
     FloatType -> putStr "float "
     
--- Declaration printers
-pprintDecl :: String -> Decl -> IO()
+-- Prints a declaration
+pprintDecl :: String -> Decl -> IO ()
 pprintDecl indent (Decl idname basetype) = 
   do
     putStr indent
@@ -82,8 +76,8 @@ pprintDecl indent (Decl idname basetype) =
     pprintIdName idname
     putStrLn ";"
 
--- print IdName and IdNameWithShape
-pprintIdName :: IdName -> IO()
+-- Prints a IdName or IdNameWithShape
+pprintIdName :: IdName -> IO ()
 pprintIdName (Name id) = putStr id
 pprintIdName (NameWithShape id exprs) = 
   do
@@ -91,17 +85,19 @@ pprintIdName (NameWithShape id exprs) =
     pprintBySepNoIndent pprintExpr exprs ", "
     putStr "]"
     
--- print a single recursive statment with indentation accumulator
-pprintStmt :: String -> Stmt -> IO()
+-- Prints a statement
+--   This action processes a single recursive statment 
+--   with indentation accumulator.
+pprintStmt :: String -> Stmt -> IO ()
 pprintStmt indentAcc stmt = 
   do
     putStr indentAcc
     pprintStmt' indentAcc stmt
 
--- Function that will print statment itself
--- Just so that I dont have to write putStr indentAcc
--- In every single function...
-pprintStmt' :: String -> Stmt -> IO()
+-- Prints a/an assginment/read/write/call/ifthen/ifthenelse/while statement
+--   This function will print statment itself 
+--   with indentation accumulator.
+pprintStmt' :: String -> Stmt -> IO ()
 pprintStmt' _ (Assign (LId idName) expr) = 
   do
     pprintIdName idName
@@ -127,7 +123,7 @@ pprintStmt' _ (Call id exprs) =
     pprintBySepNoIndent pprintExpr exprs ", "
     putStrLn (");")
   
-pprintStmt' indentAcc (If expr stmts) = 
+pprintStmt' indentAcc (IfThen expr stmts) = 
   do
     putStr ("if ")
     pprintExpr expr
@@ -135,7 +131,7 @@ pprintStmt' indentAcc (If expr stmts) =
     pprintBySep (indentAcc ++ indentation) pprintStmt stmts ""
     putStrLn (indentAcc ++ "fi")
 
-pprintStmt' indentAcc (IfElse expr stmts1 stmts2) = 
+pprintStmt' indentAcc (IfThenElse expr stmts1 stmts2) = 
   do
     putStr ("if ")
     pprintExpr expr
@@ -153,8 +149,8 @@ pprintStmt' indentAcc (While expr stmts) =
     pprintBySep (indentAcc ++ indentation) pprintStmt stmts ""
     putStrLn (indentAcc ++ "od")
 
--- Expression printers. One for each type
-pprintExpr :: Expr -> IO()
+-- Prints an expression
+pprintExpr :: Expr -> IO ()
 pprintExpr (IntConst i)      = putStr (show i)
 pprintExpr (StrConst s)      = putStr (show s)
 pprintExpr (FloatConst f)    = putStr (show f)
@@ -163,12 +159,14 @@ pprintExpr (BoolConst bool)  = putStr (show bool)
 pprintExpr (UnExpr unop expr) = pprintUnExpr unop expr
 pprintExpr (BinExpr binop expr1 expr2) = pprintBinExpr binop expr1 expr2
 
+-- Prints a unary experssion
 pprintUnExpr :: UnOp -> Expr -> IO ()
 pprintUnExpr unop expr =
   do
     pprintUnOp unop
     pprintExpr expr
 
+-- Prints a binary expression
 pprintBinExpr :: BinOp -> Expr -> Expr -> IO ()
 pprintBinExpr binop expr1 expr2 =
   do
@@ -176,8 +174,9 @@ pprintBinExpr binop expr1 expr2 =
     pprintBinOp binop
     pprintExprParens expr2
 
--- Will check if the expr needs to be surrend by parens
-pprintExprParens :: Expr -> IO()
+-- Prints an expression with parentheses
+--   This function will check if the expr needs to be surrend by parentheses.
+pprintExprParens :: Expr -> IO ()
 pprintExprParens expr = 
   case expr of
     BinExpr _ _ _ -> do
@@ -186,13 +185,15 @@ pprintExprParens expr =
                         putStr ")"
     otherwise -> pprintExpr expr
 
+-- Prints a unary operator
 pprintUnOp :: UnOp -> IO ()
 pprintUnOp unop =
   case unop of
     Negative -> putStr "-"
     Not      -> putStr "!"
 
-pprintBinOp :: BinOp -> IO()
+-- Prints a binary operator
+pprintBinOp :: BinOp -> IO ()
 pprintBinOp binop = 
   case binop of
     Equal        -> putStr " = "

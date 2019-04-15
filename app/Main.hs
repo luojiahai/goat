@@ -15,50 +15,51 @@ import GoatParser
 import GoatPrettyPrinter
 import System.Environment
 import System.Exit
-import System.IO
 
 
 data Task = 
   Compile | Parse | Pprint
   deriving (Show, Eq)
 
+-- Main function
 main :: IO ()
 main = 
   do
     progname <- getProgName
     args <- getArgs
     task <- checkArgs progname args
-    if task == Compile then
-      do
-        putStrLn "Sorry, cannot generate code yet"
-        exitWith ExitSuccess
-    else
-      if task == Parse then
-        do
-          let [_, filename] = args
-          input <- readFile filename
-          let output = ast input
-          case output of
-            Right tree -> putStrLn (show tree)
-            Left err -> do { putStr "Parse error at "
-                           ; print err
-                           ; exitWith (ExitFailure 2)
-                           }
-      else
-        do
-          let [_, filename] = args
-          input <- readFile filename
-          let output = ast input
-          case output of
-            Right tree -> prettyPrint tree
-            Left err -> do { putStr "Parse error at "
-                           ; print err
-                           ; exitWith (ExitFailure 2)
-                           }
+    processTask args task
 
--- processTask :: [String] -> Task -> IO ()
--- processTask 
+-- Processes a task
+processTask :: [String] -> Task -> IO ()
+processTask args Compile =
+  do
+    putStrLn "Sorry, cannot generate code yet"
+    exitWith ExitSuccess
+processTask args Parse =
+  do
+    let [_, filename] = args
+    input <- readFile filename
+    let output = ast input
+    case output of
+      Right tree -> putStrLn (show tree)
+      Left err -> do 
+                    putStr "Parse error at "
+                    print err
+                    exitWith (ExitFailure 2)
+processTask args Pprint =
+  do
+    let [_, filename] = args
+    input <- readFile filename
+    let output = ast input
+    case output of
+      Right tree -> prettyPrint tree
+      Left err -> do 
+                    putStr "Parse error at "
+                    print err
+                    exitWith (ExitFailure 2)
 
+-- Checks command line arguments
 checkArgs :: String -> [String] -> IO Task
 checkArgs _ ['-':_] = 
   do

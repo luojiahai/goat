@@ -6,10 +6,10 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
-import System.Environment
-import System.Exit
+
 
 -- Lexer
+--   Uses Parsec language definition and its lexers
 languageDef = 
   emptyDef
     { Token.commentLine       = "#"
@@ -62,16 +62,16 @@ pProc =
     do
       reserved "main"
       parens (return ())
-      (decls,stmts) <- pProgBody
+      (decls,stmts) <- pProcBody
       return $ Main decls stmts
       <|>
       do
         ident <- identifier
         prmts <- parens (pPrmt `sepBy` (symbol ","))
-        (decls,stmts) <- pProgBody
+        (decls,stmts) <- pProcBody
         return $ Procedure ident prmts decls stmts
 
--- Parses a paramteter
+-- Parses a parameter
 pPrmt :: Parser Prmt
 pPrmt = 
   do
@@ -80,7 +80,7 @@ pPrmt =
     ident <- identifier
     return $ Prmt indicator basetype ident
 
--- Parses a prmteter indicator
+-- Parses a parameter indicator
 pPrmtIndicator :: Parser PrmtIndicator
 pPrmtIndicator =
   (reserved "val" >> return Val)
@@ -89,13 +89,11 @@ pPrmtIndicator =
   <?> 
   "prmt indicator"
 
------------------------------------------------------------------
---  pProgBody looks for a sequence of declarations followed by a
---  sequence of statements.
------------------------------------------------------------------
-
-pProgBody :: Parser ([Decl],[Stmt])
-pProgBody = 
+-- Parses a body of a procedure
+--   This function looks for a sequence of declarations followed by a
+--   sequence of statements.
+pProcBody :: Parser ([Decl],[Stmt])
+pProcBody = 
   do
     decls <- many pDecl
     reserved "begin"
@@ -105,6 +103,7 @@ pProgBody =
   <?> 
   "program body"
 
+-- Parses a declaration
 pDecl :: Parser Decl
 pDecl = 
   do
@@ -116,6 +115,7 @@ pDecl =
   <?> 
   "declaration"
 
+-- Parses a base type
 pBaseType :: Parser BaseType
 pBaseType = 
   (reserved "bool" >> return BoolType)
@@ -126,8 +126,9 @@ pBaseType =
   <?> 
   "basetype"
 
--- Pariser for <id>, <id> [<expr>], <id> [<expr>,<expr>]
--- Limit the amount of dimention by measureing the length.
+-- Parses an identifier
+--   This function is for <id>, <id> [<expr>], <id> [<expr>,<expr>].
+--   Limits the amount of dimention by measureing the length.
 pIdentName :: Parser IdName
 pIdentName = 
   do
@@ -141,18 +142,16 @@ pIdentName =
       <|>
       (return $ Name ident)
 
-
------------------------------------------------------------------
---  pStmt is the main parser for statements. It wants to recognise
---  read and write statements, and assignments.
------------------------------------------------------------------
-
-pStmt, pRead, pWrite, pAsg, pIf, pWhile, pCall :: Parser Stmt
-
+-- Parses a statement
+--   This function is the main parser for statements.
+pStmt :: Parser Stmt
 pStmt = 
   choice [pRead, pWrite, pAsg, pIf, pWhile, pCall]
   <?> 
   "statement"
+
+-- Parses a/an read/write/assignment/if/while/call statement
+pRead, pWrite, pAsg, pIf, pWhile, pCall :: Parser Stmt
 
 pRead = 
   do 
@@ -192,11 +191,11 @@ pIf =
       reserved "else"
       stmt2 <- many1 pStmt
       reserved "fi"
-      return $ IfElse cond stmt1 stmt2
+      return $ IfThenElse cond stmt1 stmt2
       <|>
       do
         reserved "fi"
-        return $ If cond stmt1
+        return $ IfThen cond stmt1
   <?>
   "if"
 
@@ -220,14 +219,12 @@ pCall =
     return $ Call id exp
   <?>
   "call"
-    
------------------------------------------------------------------
---  pExpr is the main parser for expressions. It takes into account
---  the operator precedences and the fact that the binary operators
---  are left-associative.
------------------------------------------------------------------
-pExpr, pTerm, pNum, pIdent, pString :: Parser Expr
 
+-- Parses an expression
+--   This function is the main parser for expressions. It takes into account
+--   the operator precedences and the fact that the binary operators
+--   are left-associative.
+pExpr :: Parser Expr
 pExpr = buildExpressionParser pOperators pTerm
 
 pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))          ]
@@ -245,6 +242,9 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))      
                 Infix  (reservedOp "||"  >> return (BinExpr Or          )) AssocLeft]
               ,[Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocLeft]
               ]
+
+-- Parses a term/num/identifier/string expression
+pTerm, pNum, pIdent, pString :: Parser Expr
 
 pTerm = 
   parens pExpr
@@ -284,8 +284,8 @@ pNum =
           return $ IntConst val
         )
       )
-    <?>
-    "number"
+  <?>
+  "number"
 
 pIdent = 
   do
@@ -294,7 +294,7 @@ pIdent =
   <?>
   "identifier"
 
-
+-- Parses a left value of an assignment
 pLvalue :: Parser Lvalue
 pLvalue = 
   do
@@ -303,6 +303,7 @@ pLvalue =
   <?>
   "lvalue"
 
+-- Parses a goat program
 pMain :: Parser GoatProgram
 pMain = 
   do
@@ -310,5 +311,6 @@ pMain =
     p <- pProg
     return p
 
+-- Returns an abstract syntax tree
 ast :: String -> Either ParseError GoatProgram
 ast = parse pMain ""
