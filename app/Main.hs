@@ -53,9 +53,7 @@ processTask args Pprint =
     input <- readFile filename
     let output = ast input
     case output of
-      Right tree -> do
-                      print tree
-                      prettyPrint tree
+      Right tree -> prettyPrint tree
       Left err -> do 
                     putStr "Parse error at "
                     print err
