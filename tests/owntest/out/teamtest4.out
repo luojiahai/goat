@@ -13,7 +13,7 @@ begin
     od
 end
 
-proc second (val bool a, ref float b, ref int c)
+proc seco_nd (val bool a, ref float b, ref int c)
 begin
     newstates := something[ab[cd, ef]];
 end
