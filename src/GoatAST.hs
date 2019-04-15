@@ -1,5 +1,5 @@
 module GoatAST where
--- AST Part
+
 
 type Ident = String 
 
@@ -19,29 +19,21 @@ data Lvalue
 data Expr
   = IntConst Int
   | StrConst String
-  | Num Float
+  | FloatConst Float
   | Id IdName
   | BoolConst Bool
-  | UnaryNot Expr
-  | UnaryMinus Expr
+  | UnExpr UnOp Expr
   | BinExpr BinOp Expr Expr
     deriving (Show, Eq)
     
-data BinOp
-  = Equ
-  | Greater 
-  | GreaterEqu
-  | Less
-  | LessEqu
-  | NotEqu
-  | And
-  | Or
-  | Add
-  | Mul
-  | Sub
-  | Div
+data UnOp
+  = Negative | Not
     deriving (Show, Eq)
 
+data BinOp
+  = Equal | Greater | GreaterEqual | Less | LessEqual | NotEqual
+  | And | Or | Add | Subtract | Multiply | Divide 
+    deriving (Show, Eq)
 
 data Decl 
   = Decl IdName BaseType
@@ -57,18 +49,17 @@ data Stmt
   | While Expr [Stmt]
     deriving (Show, Eq)
 
-data ParamIndicator
+data PrmtIndicator
   = Val 
   | Ref
     deriving (Show, Eq)
 
-data Param
-  = Param ParamIndicator BaseType Ident
+data Prmt
+  = Prmt PrmtIndicator BaseType Ident
     deriving (Show, Eq)
 
-
 data Procedure
-  = Procedure Ident [Param] [Decl] [Stmt]
+  = Procedure Ident [Prmt] [Decl] [Stmt]
   | Main [Decl] [Stmt]
     deriving (Show, Eq)
 
