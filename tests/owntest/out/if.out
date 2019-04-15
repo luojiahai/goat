@@ -1,3 +1,4 @@
+GoatProgram [Procedure "main" [] [Decl (Ident "a") IntType,Decl (Ident "b") IntType] [IfThenElse (BinExpr Or (BinExpr And (BinExpr GreaterEqual (Id (Ident "a")) (IntConst 1)) (BinExpr LessEqual (Id (Ident "a")) (IntConst 3))) (BinExpr Greater (Id (Ident "a")) (IntConst 5))) [Assign (LId (Ident "a")) (IntConst 3)] [Assign (LId (Ident "a")) (IntConst 5)]]]
 proc main ()
     int a;
     int b;

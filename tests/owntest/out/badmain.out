@@ -1,3 +1,4 @@
+GoatProgram [Procedure "main" [Prmt Val IntType "b2"] [Decl (Ident "a3") IntType] [Assign (LId (Ident "a3")) (IntConst 12)]]
 proc main (val int b2)
     int a3;
 begin

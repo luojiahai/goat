@@ -1,3 +1,4 @@
+GoatProgram [Procedure "main" [] [Decl (Ident "a") IntType] [Assign (LId (Ident "a")) (IntConst 12),Assign (LId (Ident "a")) (BinExpr NotEqual (IntConst 12) (UnExpr Not (IntConst 22)))]]
 proc main ()
     int a;
 begin
