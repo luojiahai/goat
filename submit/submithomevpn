@@ -1,1 +1,0 @@
-cp -L * /run/user/1000/gvfs/sftp:host=nutmeg2.eng.unimelb.edu.au/storage3/zeta/students/y/yunc4/PLI/

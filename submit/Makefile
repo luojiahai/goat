@@ -1,4 +1,4 @@
-Goat: Main.hs GoatAST.hs  PrettyPrinter.hs
+Goat: *.hs
 	(ghc Main.hs -o Goat) || (stack ghc -- Main.hs -o Goat) 
 
 clean:
