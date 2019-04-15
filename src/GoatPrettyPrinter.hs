@@ -224,4 +224,4 @@ pprintBinOp binop =
 -- Prints a binary constant
 pprintBool :: Bool -> IO()
 pprintBool False  = putStr "false"
-pprintBool True  = putStr "true"
+pprintBool True   = putStr "true"
