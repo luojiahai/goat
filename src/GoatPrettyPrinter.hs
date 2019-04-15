@@ -163,14 +163,13 @@ pprintStmt' indentAcc (While expr stmts) =
 
 -- Prints an expression
 pprintExpr :: Expr -> IO ()
-pprintExpr (IntConst i)      = putStr (show i)
-pprintExpr (StrConst s)      = putStr (show s)
-pprintExpr (FloatConst f)    = putStr (show f)
-pprintExpr (Id ident)       = pprintIdent ident
-pprintExpr (UnExpr unop expr) = pprintUnExpr unop expr
-pprintExpr (BinExpr binop expr1 expr2) = pprintBinExpr binop expr1 expr2
-pprintExpr (BoolConst True)  = putStr "true"
-pprintExpr (BoolConst False)  = putStr "false"
+pprintExpr (IntConst i)                 = putStr (show i)
+pprintExpr (StrConst s)                 = putStr (show s)
+pprintExpr (FloatConst f)               = putStr (show f)
+pprintExpr (Id ident)                   = pprintIdent ident
+pprintExpr (UnExpr unop expr)           = pprintUnExpr unop expr
+pprintExpr (BinExpr binop expr1 expr2)  = pprintBinExpr binop expr1 expr2
+pprintExpr (BoolConst bool)             = pprintBool bool
 
 -- Prints a unary experssion
 pprintUnExpr :: UnOp -> Expr -> IO ()
@@ -221,3 +220,8 @@ pprintBinOp binop =
     Multiply     -> putStr " * "
     Subtract     -> putStr " - "
     Divide       -> putStr " / "
+
+-- Prints a binary constant
+pprintBool :: Bool -> IO()
+pprintBool False  = putStr "false"
+pprintBool True  = putStr "true"
