@@ -232,18 +232,18 @@ pCall =
 pExpr :: Parser Expr
 pExpr = buildExpressionParser pOperators pTerm
 
-pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))          ]
+pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr  Negative    ))          ]
               ,[Infix  (reservedOp "*"   >> return (BinExpr Multiply    )) AssocLeft,
                 Infix  (reservedOp "/"   >> return (BinExpr Divide      )) AssocLeft]
               ,[Infix  (reservedOp "+"   >> return (BinExpr Add         )) AssocLeft,
                 Infix  (reservedOp "-"   >> return (BinExpr Subtract    )) AssocLeft]
-              ,[Prefix (reservedOp "!"   >> return (UnExpr Not          ))          ]
-              ,[Infix  (reservedOp ">="  >> return (BinExpr GreaterEqual)) AssocLeft,
-                Infix  (reservedOp "<="  >> return (BinExpr LessEqual   )) AssocLeft,
-                Infix  (reservedOp ">"   >> return (BinExpr Greater     )) AssocLeft,
-                Infix  (reservedOp "<"   >> return (BinExpr Less        )) AssocLeft,
-                Infix  (reservedOp "!="  >> return (BinExpr NotEqual    )) AssocLeft]
-              ,[Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocLeft]
+              ,[Prefix (reservedOp "!"   >> return (UnExpr  Not         ))          ]
+              ,[Infix  (reservedOp ">="  >> return (BinExpr GreaterEqual)) AssocNone,
+                Infix  (reservedOp "<="  >> return (BinExpr LessEqual   )) AssocNone,
+                Infix  (reservedOp ">"   >> return (BinExpr Greater     )) AssocNone,
+                Infix  (reservedOp "<"   >> return (BinExpr Less        )) AssocNone,
+                Infix  (reservedOp "!="  >> return (BinExpr NotEqual    )) AssocNone]
+              ,[Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocNone]
               ,[Infix  (reservedOp "&&"  >> return (BinExpr And         )) AssocLeft,
                 Infix  (reservedOp "||"  >> return (BinExpr Or          )) AssocLeft]
               ]
