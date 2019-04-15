@@ -69,19 +69,19 @@ pprintBaseType t =
     
 -- Prints a declaration
 pprintDecl :: String -> Decl -> IO ()
-pprintDecl indent (Decl idname basetype) = 
+pprintDecl indent (Decl ident basetype) = 
   do
     putStr indent
     pprintBaseType basetype
-    pprintIdName idname
+    pprintIdent ident
     putStrLn ";"
 
--- Prints a IdName or IdNameWithShape
-pprintIdName :: IdName -> IO ()
-pprintIdName (Name id) = putStr id
-pprintIdName (NameWithShape id exprs) = 
+-- Prints an identifier
+pprintIdent :: Ident -> IO ()
+pprintIdent (Ident name) = putStr name
+pprintIdent (IdentWithShape name exprs) = 
   do
-    putStr $ id ++ "["
+    putStr $ name ++ "["
     pprintBySepNoIndent pprintExpr exprs ", "
     putStr "]"
     
@@ -100,7 +100,7 @@ pprintStmt indentAcc stmt =
 pprintStmt' :: String -> Stmt -> IO ()
 pprintStmt' _ (Assign (LId idName) expr) = 
   do
-    pprintIdName idName
+    pprintIdent idName
     putStr " := "
     pprintExpr expr
     putStrLn ";"
@@ -108,7 +108,7 @@ pprintStmt' _ (Assign (LId idName) expr) =
 pprintStmt' _ (Read (LId idName)) =
   do
     putStr ("read ")
-    pprintIdName idName
+    pprintIdent idName
     putStrLn (";")
 
 pprintStmt' _ (Write expr) =
@@ -154,7 +154,7 @@ pprintExpr :: Expr -> IO ()
 pprintExpr (IntConst i)      = putStr (show i)
 pprintExpr (StrConst s)      = putStr (show s)
 pprintExpr (FloatConst f)    = putStr (show f)
-pprintExpr (Id idname)       = pprintIdName idname
+pprintExpr (Id ident)       = pprintIdent ident
 pprintExpr (BoolConst bool)  = putStr (show bool)
 pprintExpr (UnExpr unop expr) = pprintUnExpr unop expr
 pprintExpr (BinExpr binop expr1 expr2) = pprintBinExpr binop expr1 expr2

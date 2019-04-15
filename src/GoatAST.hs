@@ -1,11 +1,11 @@
 module GoatAST where
 
 
-type Ident = String 
+type Name = String 
 
-data IdName
-  = Name Ident
-  | NameWithShape Ident [Expr]
+data Ident
+  = Ident Name
+  | IdentWithShape Name [Expr]
     deriving (Show, Eq)
 
 data BaseType 
@@ -13,14 +13,14 @@ data BaseType
     deriving (Show, Eq)
 
 data Lvalue 
-  = LId IdName
+  = LId Ident
     deriving (Show, Eq)
 
 data Expr
   = IntConst Int
   | StrConst String
   | FloatConst Float
-  | Id IdName
+  | Id Ident
   | BoolConst Bool
   | UnExpr UnOp Expr
   | BinExpr BinOp Expr Expr
@@ -37,14 +37,14 @@ data BinOp
     deriving (Show, Eq)
 
 data Decl 
-  = Decl IdName BaseType
+  = Decl Ident BaseType
     deriving (Show, Eq)
 
 data Stmt 
   = Assign Lvalue Expr
   | Read Lvalue
   | Write Expr
-  | Call Ident [Expr]
+  | Call Name [Expr]
   | IfThen Expr [Stmt]
   | IfThenElse Expr [Stmt] [Stmt]
   | While Expr [Stmt]
@@ -56,11 +56,11 @@ data PrmtIndicator
     deriving (Show, Eq)
 
 data Prmt
-  = Prmt PrmtIndicator BaseType Ident
+  = Prmt PrmtIndicator BaseType Name
     deriving (Show, Eq)
 
 data Procedure
-  = Procedure Ident [Prmt] [Decl] [Stmt]
+  = Procedure Name [Prmt] [Decl] [Stmt]
   | Main [Decl] [Stmt]
     deriving (Show, Eq)
 

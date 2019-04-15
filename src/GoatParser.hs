@@ -66,10 +66,10 @@ pProc =
       return $ Main decls stmts
       <|>
       do
-        ident <- identifier
+        name <- identifier
         prmts <- parens (pPrmt `sepBy` (symbol ","))
         (decls,stmts) <- pProcBody
-        return $ Procedure ident prmts decls stmts
+        return $ Procedure name prmts decls stmts
 
 -- Parses a parameter
 pPrmt :: Parser Prmt
@@ -77,8 +77,8 @@ pPrmt =
   do
     indicator <- pPrmtIndicator
     basetype <- pBaseType
-    ident <- identifier
-    return $ Prmt indicator basetype ident
+    name <- identifier
+    return $ Prmt indicator basetype name
 
 -- Parses a parameter indicator
 pPrmtIndicator :: Parser PrmtIndicator
@@ -108,7 +108,7 @@ pDecl :: Parser Decl
 pDecl = 
   do
     basetype <- pBaseType
-    identT <- pIdentName
+    identT <- pIdent
     whiteSpace
     semi
     return $ Decl identT basetype
@@ -129,18 +129,18 @@ pBaseType =
 -- Parses an identifier
 --   This function is for <id>, <id> [<expr>], <id> [<expr>,<expr>].
 --   Limits the amount of dimention by measureing the length.
-pIdentName :: Parser IdName
-pIdentName = 
+pIdent :: Parser Ident
+pIdent = 
   do
-    ident <- identifier
+    name <- identifier
     do
       shape <- brackets (pExpr `sepBy1` (symbol ","))
       let l = length shape
       case l > 0 && l <= 2 of
-        True -> return $ NameWithShape ident shape
-        False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ ident ++ show (shape))
+        True -> return $ IdentWithShape name shape
+        False -> fail ("Unsupported id dimention of " ++ show l ++ " with " ++ name ++ show (shape))
       <|>
-      (return $ Name ident)
+      (return $ Ident name)
 
 -- Parses a statement
 --   This function is the main parser for statements.
@@ -244,7 +244,7 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))      
               ]
 
 -- Parses a term/num/identifier/string expression
-pTerm, pNum, pIdent, pString :: Parser Expr
+pTerm, pNum, pId, pString :: Parser Expr
 
 pTerm = 
   parens pExpr
@@ -253,7 +253,7 @@ pTerm =
   <|> 
   pNum 
   <|> 
-  pIdent
+  pId
   <|> 
   pBool
   <?>
@@ -287,10 +287,10 @@ pNum =
   <?>
   "number"
 
-pIdent = 
+pId = 
   do
-    identT <- pIdentName
-    return $ Id identT
+    ident <- pIdent
+    return $ Id ident
   <?>
   "identifier"
 
@@ -298,8 +298,8 @@ pIdent =
 pLvalue :: Parser Lvalue
 pLvalue = 
   do
-    identT <- pIdentName
-    return $ LId identT
+    ident <- pIdent
+    return $ LId ident
   <?>
   "lvalue"
 
