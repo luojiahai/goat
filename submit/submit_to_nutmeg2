@@ -1,1 +1,1 @@
-scp * yunc4@nutmeg2.eng.unimelb.edu.au:~/PLI/ 
+rsync --copy-link * yunc4@nutmeg2.unimelb.edu.au:~/PLI/
