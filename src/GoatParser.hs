@@ -71,17 +71,10 @@ pProc :: Parser Procedure
 pProc =
   do
     reserved "proc"
-    do
-      reserved "main"
-      parens (return ())
-      (decls,stmts) <- pProcBody
-      return $ Main decls stmts
-      <|>
-      do
-        name <- identifier
-        prmts <- parens (pPrmt `sepBy` (symbol ","))
-        (decls,stmts) <- pProcBody
-        return $ Procedure name prmts decls stmts
+    name <- identifier
+    prmts <- parens (pPrmt `sepBy` (symbol ","))
+    (decls,stmts) <- pProcBody
+    return $ Procedure name prmts decls stmts
 
 -- Parses a parameter
 pPrmt :: Parser Prmt
