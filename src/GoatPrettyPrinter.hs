@@ -29,7 +29,7 @@ pprintBySep indent printAction (x:xs) sep =
 
 -- Processes a print action seperated by a seperator without indentations
 --   Some print actions does not take indent as input, but still wants
---   to user setPrinter function. Thus we wrap it arround to take 
+--   to use the sep function. Thus we wrap it arround to take 
 --   an additional argument.
 pprintBySepNoIndent :: (a -> IO ()) -> [a] -> String  -> IO ()
 pprintBySepNoIndent printAction xs sep = pprintBySep "" (\_ -> printAction) xs sep
