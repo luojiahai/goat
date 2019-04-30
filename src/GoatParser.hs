@@ -63,6 +63,7 @@ pProg :: Parser GoatProgram
 pProg = 
   do
     procs <- many1 pProc
+    end <- eof
     return $ GoatProgram procs
 
 -- Parses a procedure
@@ -244,15 +245,15 @@ pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))      
                 Infix  (reservedOp "/"   >> return (BinExpr Divide      )) AssocLeft]
               ,[Infix  (reservedOp "+"   >> return (BinExpr Add         )) AssocLeft,
                 Infix  (reservedOp "-"   >> return (BinExpr Subtract    )) AssocLeft]
-              ,[Prefix (reservedOp "!"   >> return (UnExpr Not          ))          ]
               ,[Infix  (reservedOp ">="  >> return (BinExpr GreaterEqual)) AssocLeft,
                 Infix  (reservedOp "<="  >> return (BinExpr LessEqual   )) AssocLeft,
                 Infix  (reservedOp ">"   >> return (BinExpr Greater     )) AssocLeft,
                 Infix  (reservedOp "<"   >> return (BinExpr Less        )) AssocLeft,
-                Infix  (reservedOp "!="  >> return (BinExpr NotEqual    )) AssocLeft]
-              ,[Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocLeft]
-              ,[Infix  (reservedOp "&&"  >> return (BinExpr And         )) AssocLeft,
-                Infix  (reservedOp "||"  >> return (BinExpr Or          )) AssocLeft]
+                Infix  (reservedOp "!="  >> return (BinExpr NotEqual    )) AssocLeft,
+                Infix  (reservedOp "="   >> return (BinExpr Equal       )) AssocLeft]
+              ,[Prefix (reservedOp "!"   >> return (UnExpr Not          ))          ]
+              ,[Infix  (reservedOp "&&"  >> return (BinExpr And         )) AssocLeft]
+              ,[Infix  (reservedOp "||"  >> return (BinExpr Or          )) AssocLeft]
               ]
 
 -- Parses a term/num/identifier/string expression

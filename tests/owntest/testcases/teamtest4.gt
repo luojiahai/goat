@@ -16,7 +16,7 @@ begin
     od
 end
 
-proc seco_nd(val bool a, ref float b, ref int c)
+proc seco_'nd(val bool a, ref float b, ref int c)
 
 begin
 newstates := something [ab [cd, ef]];
