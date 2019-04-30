@@ -72,17 +72,10 @@ pProc :: Parser Procedure
 pProc =
   do
     reserved "proc"
-    do
-      reserved "main"
-      parens (return ())
-      (decls,stmts) <- pProcBody
-      return $ Main decls stmts
-      <|>
-      do
-        name <- identifier
-        prmts <- parens (pPrmt `sepBy` (symbol ","))
-        (decls,stmts) <- pProcBody
-        return $ Procedure name prmts decls stmts
+    name <- identifier
+    prmts <- parens (pPrmt `sepBy` (symbol ","))
+    (decls,stmts) <- pProcBody
+    return $ Procedure name prmts decls stmts
 
 -- Parses a parameter
 pPrmt :: Parser Prmt
@@ -240,7 +233,7 @@ pCall =
 pExpr :: Parser Expr
 pExpr = buildExpressionParser pOperators pTerm
 
-pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr Negative     ))          ]
+pOperators = [ [Prefix (reservedOp "-"   >> return (UnExpr  Negative    ))          ]
               ,[Infix  (reservedOp "*"   >> return (BinExpr Multiply    )) AssocLeft,
                 Infix  (reservedOp "/"   >> return (BinExpr Divide      )) AssocLeft]
               ,[Infix  (reservedOp "+"   >> return (BinExpr Add         )) AssocLeft,

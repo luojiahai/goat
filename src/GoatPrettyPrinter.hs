@@ -173,8 +173,15 @@ pprintExpr (BoolConst bool)             = pprintBool bool
 
 -- Prints a unary experssion
 pprintUnExpr :: UnOp -> Expr -> IO ()
+pprintUnExpr unop (BinExpr binop expr1 expr2) =
+  do 
+    pprintUnOp unop
+    putStr("(")
+    pprintExpr (BinExpr binop expr1 expr2)
+    putStr(")")
+
 pprintUnExpr unop expr =
-  do
+  do 
     pprintUnOp unop
     pprintExpr expr
 
