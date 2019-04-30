@@ -2,5 +2,5 @@ proc main()
     int a;
     int b;
 begin
-    a := aa || bb && cc && dd || ee = cc;
+    a := aa || bb && !cc && !dd || !ee = !cc;
 end
