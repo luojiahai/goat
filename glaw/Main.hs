@@ -13,6 +13,7 @@ module Main where
 
 import GoatParser
 import GoatPrettyPrinter
+import GoatSymTable
 import System.Environment
 import System.Exit
 

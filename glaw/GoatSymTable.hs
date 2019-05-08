@@ -11,3 +11,13 @@
 
 
 module GoatSymTable where
+
+import GoatParser
+import qualified Data.Map
+
+
+type SymTable = Data.Map.Map String Symbol
+
+data Attribute = Value String | Environment String | Type String | Operation String
+
+data Symbol = Symbol String Attribute | SymTable
