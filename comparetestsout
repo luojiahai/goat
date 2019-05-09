@@ -1,0 +1,9 @@
+for filename in ./tests/others/output/algos/*.out; do
+    echo "$filename"
+    diff "$filename"  ./tests/others/ouroutput/algos/$(basename "$filename" .out).out
+done
+for filename in ./tests/others/output/syntax/*.out; do
+    echo "$filename"
+    diff "$filename"  ./tests/others/ouroutput/syntax/$(basename "$filename" .out).out
+done
+

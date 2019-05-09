@@ -1,0 +1,38 @@
+proc main ()
+    int no_spaces;
+    float no_spaces[1];
+    bool no_spaces[1, 1];
+    int spaces;
+    float spaces[0];
+    bool spaces[0, 0];
+    int actual_tabs;
+    float actual_tabs[0];
+    bool actual_tabs[0, 0];
+    int newlines;
+    float newlines[0];
+    bool newlines[0, 0];
+    int comments;
+    float comments[0];
+    bool comments[0, 0];
+begin
+    a := 1;
+    a[1] := 1;
+    a[1, 1] := 1;
+    a := 1;
+    a[1] := 1;
+    a[1, 1] := 1;
+    a := 1;
+    a[1] := 1;
+    a[1, 1] := 1;
+    a := 1;
+    a[1] := 1;
+    a[1, 1] := 1;
+    a := 1;
+    a[1] := 1;
+    a[1, 1] := 1;
+end
+
+proc name (val bool a, ref float b, val int n)
+begin
+    write "at least one statement, right?";
+end

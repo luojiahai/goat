@@ -1,0 +1,2 @@
+stack build
+stack exec -- goat-exe -p kid/fulltest.gt
