@@ -33,6 +33,9 @@ data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr
 symTable :: GoatProgram -> [SymTable]
 symTable (GoatProgram procs) = stProcs procs
 
+symTableProc :: Procedure -> SymTable
+symTableProc proc = stProc proc
+
 stBind :: String -> Symbol -> HashMap -> ((), HashMap)
 stBind key value hashMap =
   let hashMap' = Data.Map.insert key value hashMap
