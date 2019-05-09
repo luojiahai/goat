@@ -30,11 +30,8 @@ data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr
   deriving (Show, Eq)
 
 
-symTable :: GoatProgram -> [SymTable]
-symTable (GoatProgram procs) = stProcs procs
-
-symTableProc :: Procedure -> SymTable
-symTableProc proc = stProc proc
+symTable :: Procedure -> SymTable
+symTable proc = stProc proc
 
 stBind :: String -> Symbol -> HashMap -> ((), HashMap)
 stBind key value hashMap =
@@ -47,10 +44,10 @@ stLookup key hashMap =
     Just value -> (value, hashMap)
     Nothing -> error $ "Undefined variable " ++ key
 
-stProcs :: [Procedure] -> [SymTable]
-stProcs [] = []
-stProcs [proc] = [stProc proc]
-stProcs (proc:procs) = stProc proc : (stProcs procs)
+-- stProcs :: [Procedure] -> [SymTable]
+-- stProcs [] = []
+-- stProcs [proc] = [stProc proc]
+-- stProcs (proc:procs) = stProc proc : (stProcs procs)
 
 stProc :: Procedure -> SymTable
 stProc (Procedure ident prmts decls stmts) = 

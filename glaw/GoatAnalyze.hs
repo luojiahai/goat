@@ -27,53 +27,53 @@ aProcs (proc:procs) = aProc proc : (aProcs procs)
 
 aProc :: Procedure -> SymTable
 aProc (Procedure ident prmts decls stmts) = 
-  let symTable = symTableProc (Procedure ident prmts decls stmts)
-  in aStmts stmts symTable
+  let table = symTable (Procedure ident prmts decls stmts)
+  in aStmts stmts table
 
 aStmts :: [Stmt] -> SymTable -> SymTable
-aStmts [] symTable = symTable
-aStmts [stmt] symTable = aStmt stmt symTable
-aStmts (stmt:stmts) symTable = (aStmt stmt . aStmts stmts) symTable
+aStmts [] table = table
+aStmts [stmt] table = aStmt stmt table
+aStmts (stmt:stmts) table = (aStmt stmt . aStmts stmts) table
 
 aStmt :: Stmt -> SymTable -> SymTable
-aStmt (Assign lvalue expr) symTable = 
-  (aLvalue lvalue . aExpr expr) symTable
-aStmt (Read lvalue) symTable = 
-  aLvalue lvalue symTable
-aStmt (Write expr) symTable = 
-  aExpr expr symTable
-aStmt (Call name exprs) symTable = 
-  (aName name . aExprs exprs) symTable
-aStmt (IfThen expr stmts) symTable = 
-  (aExpr expr . aStmts stmts) symTable
-aStmt (IfThenElse expr stmts1 stmts2) symTable = 
-  (aExpr expr . aStmts stmts1 . aStmts stmts2) symTable
-aStmt (While expr stmts) symTable = 
-  (aExpr expr . aStmts stmts) symTable
+aStmt (Assign lvalue expr) table = 
+  (aLvalue lvalue . aExpr expr) table
+aStmt (Read lvalue) table = 
+  aLvalue lvalue table
+aStmt (Write expr) table = 
+  aExpr expr table
+aStmt (Call name exprs) table = 
+  (aName name . aExprs exprs) table
+aStmt (IfThen expr stmts) table = 
+  (aExpr expr . aStmts stmts) table
+aStmt (IfThenElse expr stmts1 stmts2) table = 
+  (aExpr expr . aStmts stmts1 . aStmts stmts2) table
+aStmt (While expr stmts) table = 
+  (aExpr expr . aStmts stmts) table
 
 aExprs :: [Expr] -> SymTable -> SymTable
-aExprs [] symTable = symTable
-aExprs [expr] symTable = aExpr expr symTable
-aExprs (expr:exprs) symTable = (aExpr expr . aExprs exprs) symTable
+aExprs [] table = table
+aExprs [expr] table = aExpr expr table
+aExprs (expr:exprs) table = (aExpr expr . aExprs exprs) table
 
 aExpr :: Expr -> SymTable -> SymTable
-aExpr (IntConst _) symTable                = symTable
-aExpr (StrConst _) symTable                = symTable
-aExpr (FloatConst _) symTable              = symTable
-aExpr (BoolConst _) symTable               = symTable
-aExpr (Id ident) symTable                  = aIdent ident symTable
-aExpr (UnExpr unop expr) symTable          = aExpr expr symTable
-aExpr (BinExpr binop expr1 expr2) symTable = 
-  (aExpr expr1 . aExpr expr2) symTable
+aExpr (IntConst _) table                = table
+aExpr (StrConst _) table                = table
+aExpr (FloatConst _) table              = table
+aExpr (BoolConst _) table               = table
+aExpr (Id ident) table                  = aIdent ident table
+aExpr (UnExpr unop expr) table          = aExpr expr table
+aExpr (BinExpr binop expr1 expr2) table = 
+  (aExpr expr1 . aExpr expr2) table
 
 aLvalue :: Lvalue -> SymTable -> SymTable
-aLvalue (LId ident) symTable = aIdent ident symTable
+aLvalue (LId ident) table = aIdent ident table
 
 aIdent :: Ident -> SymTable -> SymTable
-aIdent (Ident name) symTable = 
-  aName name symTable
-aIdent (IdentWithShape name exprs) symTable = 
-  (aName name . aExprs exprs) symTable
+aIdent (Ident name) table = 
+  aName name table
+aIdent (IdentWithShape name exprs) table = 
+  (aName name . aExprs exprs) table
 
 aName :: String -> SymTable -> SymTable
 aName name (SymTable header hashMap) = 

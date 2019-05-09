@@ -3,5 +3,6 @@ proc main()
     float b;
     bool c;
 begin
+    write d;
     write "Hello, World!\n";
 end
