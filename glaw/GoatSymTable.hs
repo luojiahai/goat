@@ -13,11 +13,30 @@
 module GoatSymTable where
 
 import GoatParser
+import GoatAST
 import qualified Data.Map
 
 
-type SymTable = Data.Map.Map String Symbol
+type HashMap = Data.Map.Map String Symbol
 
-data Attribute = Value String | Environment String | Type String | Operation String
+type Header = String
 
-data Symbol = Symbol String Attribute | SymTable
+data SymTable = SymTable Header HashMap
+    deriving (Show, Eq)
+
+data Attribute = Slot Int | Type BaseType
+    deriving (Show, Eq)
+
+data Symbol = Symbol String [Attribute]
+    deriving (Show, Eq)
+
+bind :: String -> Symbol -> HashMap -> ((), HashMap)
+bind key value hashMap =
+    let hashMap' = Data.Map.insert key value hashMap
+    in ((), hashMap')
+
+lookup :: String -> HashMap -> (Symbol, HashMap)
+lookup key hashMap = 
+    case Data.Map.lookup key hashMap of
+      Just value -> (value, hashMap)
+      Nothing -> error $ "Undefined variable " ++ key

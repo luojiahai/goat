@@ -13,7 +13,7 @@ module Main where
 
 import GoatParser
 import GoatPrettyPrinter
-import GoatSymTable
+import GoatAnalyze
 import System.Environment
 import System.Exit
 
@@ -36,6 +36,15 @@ processTask :: [String] -> Task -> IO ()
 processTask args Compile =
   do
     putStrLn "Sorry, cannot generate code yet"
+    let [filename] = args
+    input <- readFile filename
+    let output = ast input
+    case output of
+      Right tree -> putStrLn (show (analyze tree))
+      Left err -> do 
+                    putStr "Parse error at "
+                    print err
+                    exitWith (ExitFailure 2)
     exitWith ExitSuccess
 processTask args Parse =
   do

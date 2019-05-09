@@ -1,0 +1,16 @@
+proc p(val int x, val float y)
+    int d;
+    float e;
+    bool f;
+begin
+    write "Yepyep";
+    write "\n";
+end
+
+proc main()
+    int a;
+    float b;
+    bool c;
+begin
+    write "Hello, World!\n";
+end
