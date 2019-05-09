@@ -33,15 +33,14 @@ aProc (Procedure ident prmts decls stmts) =
 aStmts :: [Stmt] -> SymTable -> SymTable
 aStmts [] table = table
 aStmts [stmt] table = aStmt stmt table
-aStmts (stmt:stmts) table = (aStmt stmt . aStmts stmts) table
+aStmts (stmt:stmts) table = 
+  (aStmt stmt . aStmts stmts) table
 
 aStmt :: Stmt -> SymTable -> SymTable
 aStmt (Assign lvalue expr) table = 
   (aLvalue lvalue . aExpr expr) table
-aStmt (Read lvalue) table = 
-  aLvalue lvalue table
-aStmt (Write expr) table = 
-  aExpr expr table
+aStmt (Read lvalue) table = aLvalue lvalue table
+aStmt (Write expr) table = aExpr expr table
 aStmt (Call name exprs) table = 
   (aName name . aExprs exprs) table
 aStmt (IfThen expr stmts) table = 
@@ -54,7 +53,8 @@ aStmt (While expr stmts) table =
 aExprs :: [Expr] -> SymTable -> SymTable
 aExprs [] table = table
 aExprs [expr] table = aExpr expr table
-aExprs (expr:exprs) table = (aExpr expr . aExprs exprs) table
+aExprs (expr:exprs) table = 
+  (aExpr expr . aExprs exprs) table
 
 aExpr :: Expr -> SymTable -> SymTable
 aExpr (IntConst _) table                = table
@@ -70,8 +70,7 @@ aLvalue :: Lvalue -> SymTable -> SymTable
 aLvalue (LId ident) table = aIdent ident table
 
 aIdent :: Ident -> SymTable -> SymTable
-aIdent (Ident name) table = 
-  aName name table
+aIdent (Ident name) table = aName name table
 aIdent (IdentWithShape name exprs) table = 
   (aName name . aExprs exprs) table
 
