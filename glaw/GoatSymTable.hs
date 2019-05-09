@@ -17,29 +17,32 @@ import GoatAST
 import qualified Data.Map
 
 
-type HashMap = Data.Map.Map String [Attribute]
+type HashMap = Data.Map.Map String Symbol
+
+type Symbol = [Attribute]
 
 type Header = String
 
 data SymTable = SymTable Header HashMap
-    deriving (Show, Eq)
+  deriving (Show, Eq)
 
-data Attribute = Slot Int | Type BaseType
-    deriving (Show, Eq)
+data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr 
+  deriving (Show, Eq)
+
 
 symTable :: GoatProgram -> [SymTable]
 symTable (GoatProgram procs) = stProcs procs
 
-stBind :: String -> [Attribute] -> HashMap -> ((), HashMap)
+stBind :: String -> Symbol -> HashMap -> ((), HashMap)
 stBind key value hashMap =
-    let hashMap' = Data.Map.insert key value hashMap
-    in ((), hashMap')
+  let hashMap' = Data.Map.insert key value hashMap
+  in ((), hashMap')
 
-stLookup :: String -> HashMap -> ([Attribute], HashMap)
+stLookup :: String -> HashMap -> (Symbol, HashMap)
 stLookup key hashMap = 
-    case Data.Map.lookup key hashMap of
-      Just value -> (value, hashMap)
-      Nothing -> error $ "Undefined variable " ++ key
+  case Data.Map.lookup key hashMap of
+    Just value -> (value, hashMap)
+    Nothing -> error $ "Undefined variable " ++ key
 
 stProcs :: [Procedure] -> [SymTable]
 stProcs [] = []
@@ -59,13 +62,13 @@ stPrmts (prmt:prmts) hashMap = (stPrmt prmt . stPrmts prmts) hashMap
 
 stPrmt :: Prmt -> HashMap -> HashMap
 stPrmt (Prmt Val basetype name) hashMap = 
-  let (_, newHashMap) = stBind name attributes hashMap
+  let (_, newHashMap) = stBind name symbol hashMap
   in newHashMap
-  where attributes = [Type basetype]
+  where symbol = [AId (Ident name), AType basetype]
 stPrmt (Prmt Ref basetype name) hashMap = 
-  let (_, newHashMap) = stBind name attributes hashMap
+  let (_, newHashMap) = stBind name symbol hashMap
   in newHashMap
-  where attributes = [Type basetype]
+  where symbol = [AId (Ident name), AType basetype]
 
 stDecls :: [Decl] -> HashMap -> HashMap
 stDecls [] hashMap = hashMap
@@ -74,10 +77,10 @@ stDecls (decl:decls) hashMap = (stDecl decl . stDecls decls) hashMap
 
 stDecl :: Decl -> HashMap -> HashMap
 stDecl (Decl (Ident name) basetype) hashMap =
-  let (_, newHashMap) = stBind name attributes hashMap
+  let (_, newHashMap) = stBind name symbol hashMap
   in newHashMap
-  where attributes = [Type basetype]
-stDecl (Decl (IdentWithShape name expr) basetype) hashMap =
-  let (_, newHashMap) = stBind name attributes hashMap
+  where symbol = [AId (Ident name), AType basetype]
+stDecl (Decl (IdentWithShape name exprs) basetype) hashMap =
+  let (_, newHashMap) = stBind name symbol hashMap
   in newHashMap
-  where attributes = [Type basetype]
+  where symbol = [AId (IdentWithShape name exprs), AType basetype]

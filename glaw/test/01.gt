@@ -8,7 +8,7 @@ begin
 end
 
 proc main()
-    int a;
+    int a[2];
     float b;
     bool c;
 begin
