@@ -34,11 +34,11 @@ symTable :: [Procedure] -> [SymTable]
 symTable procs = stProcs procs
 
 stAttrId :: Symbol -> Attribute
-stAttrId [] = error $ "No attribute Id"
+stAttrId [] = error $ "InternalError: No attribute Id"
 stAttrId [attr] = 
   case attr of
     (AId ident) -> AId ident
-    otherwise -> error $ "No attribute Id"
+    otherwise -> error $ "InternalError: No attribute Id"
 stAttrId (attr:attrs) = 
   case attr of
     (AId ident) -> AId ident
@@ -53,13 +53,13 @@ stLookupHashMap :: String -> HashMap -> (Symbol, HashMap)
 stLookupHashMap key hashMap = 
   case Data.Map.lookup key hashMap of
     Just value -> (value, hashMap)
-    Nothing -> error $ "Undefined variable " ++ key
+    Nothing -> error $ "SemanticError: Undefined variable " ++ key
 
 stLookupSymTable :: String -> [SymTable] -> SymTable -> (SymTable, SymTable)
-stLookupSymTable ident [] _ = error $ "Undefined procedure " ++ ident
+stLookupSymTable ident [] _ = error $ "SemanticError: Undefined procedure " ++ ident
 stLookupSymTable ident [(SymTable header prmts hashMap)] table = 
   if ident == header then (table, (SymTable header prmts hashMap))
-  else error $ "Undefined procedure " ++ ident
+  else error $ "SemanticError: Undefined procedure " ++ ident
 stLookupSymTable ident ((SymTable header prmts hashMap):tables) table =
   if ident == header then (table, (SymTable header prmts hashMap))
   else stLookupSymTable ident tables table

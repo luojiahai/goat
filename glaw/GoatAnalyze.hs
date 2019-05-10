@@ -65,10 +65,8 @@ aExpr (IntConst _) tables table = table
 aExpr (StrConst _) tables table = table
 aExpr (FloatConst _) tables table = table
 aExpr (BoolConst _) tables table = table
-aExpr (Id ident) tables table = 
-  aIdent ident tables table
-aExpr (UnExpr unop expr) tables table = 
-  aExpr expr tables table
+aExpr (Id ident) tables table = aIdent ident tables table
+aExpr (UnExpr unop expr) tables table = aExpr expr tables table
 aExpr (BinExpr binop expr1 expr2) tables table = 
   (aExpr expr1 tables . aExpr expr2 tables) table
 
@@ -108,4 +106,4 @@ aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aCall name exprs tables table = 
   let (oldTable, (SymTable _ prmts _)) = stLookupSymTable name tables table
   in if length exprs == length prmts then oldTable
-  else error $ "Incorrect number of arguments of procedure " ++ name
+  else error $ "CallError: Incorrect number of arguments for " ++ name
