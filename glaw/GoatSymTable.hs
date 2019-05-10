@@ -56,7 +56,8 @@ stLookupHashMap key hashMap =
     Nothing -> error $ "SemanticError: Undefined variable " ++ key
 
 stLookupSymTable :: String -> [SymTable] -> SymTable -> (SymTable, SymTable)
-stLookupSymTable ident [] _ = error $ "SemanticError: Undefined procedure " ++ ident
+stLookupSymTable ident [] _ = 
+  error $ "SemanticError: Undefined procedure " ++ ident
 stLookupSymTable ident [(SymTable header prmts hashMap)] table = 
   if ident == header then (table, (SymTable header prmts hashMap))
   else error $ "SemanticError: Undefined procedure " ++ ident
