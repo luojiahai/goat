@@ -34,11 +34,11 @@ symTable :: [Procedure] -> [SymTable]
 symTable procs = stProcs procs
 
 stAttrId :: Symbol -> Attribute
-stAttrId [] = error $ "InternalError: No attribute Id"
+stAttrId [] = error $ "InternalError: No AId"
 stAttrId [attr] = 
   case attr of
     (AId ident) -> AId ident
-    otherwise -> error $ "InternalError: No attribute Id"
+    otherwise -> error $ "InternalError: No AId"
 stAttrId (attr:attrs) = 
   case attr of
     (AId ident) -> AId ident

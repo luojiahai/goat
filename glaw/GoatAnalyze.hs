@@ -85,9 +85,10 @@ aIdentName name tables (SymTable header prmts hashMap) =
     (AId ident) -> case ident of
       (IdentWithShape name' exprs') ->
         error $ "ShapeError: " ++ name 
-          ++ " has shape " ++ show (length exprs')
+          ++ ", actual no shape"
+          ++ ", expected " ++ show (length exprs')
       otherwise -> SymTable header prmts newHashMap
-    otherwise -> error $ "TypeError: " ++ name ++ " is not an identifier"
+    otherwise -> error $ "InternalError: " ++ name ++ " is not AId"
 
 aIdentNameWithShape :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) = 
@@ -98,12 +99,17 @@ aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) =
         if length exprs == length exprs'
         then SymTable header prmts newHashMap 
         else error $ "ShapeError: " ++ name 
-          ++ " has shape " ++ show (length exprs')
-      otherwise -> error $ "ShapeError: " ++ name ++ " has no shape"
-    otherwise -> error $ "TypeError: " ++ name ++ " is not an identifier"
+          ++ ", actual " ++ show (length exprs)
+          ++ ", expected " ++ show (length exprs')
+      otherwise -> error $ "ShapeError: " ++ name 
+        ++ ", actual " ++ show (length exprs)
+        ++ ", expected no shape"
+    otherwise -> error $ "InternalError: " ++ name ++ " is not AId"
   
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aCall name exprs tables table = 
   let (oldTable, (SymTable _ prmts _)) = stLookupSymTable name tables table
   in if length exprs == length prmts then oldTable
   else error $ "CallError: Incorrect number of arguments for " ++ name
+    ++ ", actual " ++ show (length exprs)
+    ++ ", expected " ++ show (length prmts)
