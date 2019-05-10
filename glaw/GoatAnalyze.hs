@@ -46,7 +46,7 @@ aStmt (Read lvalue) tables table =
 aStmt (Write expr) tables table = 
   aExpr expr tables table
 aStmt (Call name exprs) tables table = 
-  (aProcName name tables . aExprs exprs tables) table
+  (aCall name exprs tables . aExprs exprs tables) table
 aStmt (IfThen expr stmts) tables table = 
   (aExpr expr tables . aStmts stmts tables) table
 aStmt (IfThenElse expr stmts1 stmts2) tables table = 
@@ -76,16 +76,17 @@ aLvalue :: Lvalue -> [SymTable] -> SymTable -> SymTable
 aLvalue (LId ident) tables table = aIdent ident tables table
 
 aIdent :: Ident -> [SymTable] -> SymTable -> SymTable
-aIdent (Ident name) tables table = aVarName name tables table
+aIdent (Ident name) tables table = aIdentName name tables table
 aIdent (IdentWithShape name exprs) tables table = 
-  (aVarName name tables . aExprs exprs tables) table
+  (aIdentName name tables . aExprs exprs tables) table
 
-aVarName :: String -> [SymTable] -> SymTable -> SymTable
-aVarName name tables (SymTable header prmts hashMap) = 
+aIdentName :: String -> [SymTable] -> SymTable -> SymTable
+aIdentName name tables (SymTable header prmts hashMap) = 
   let (value, newHashMap) = stLookupHashMap name hashMap
   in SymTable header prmts newHashMap
 
-aProcName :: String -> [SymTable] -> SymTable -> SymTable
-aProcName name tables table = 
-  let (oldTable, newTable) = stLookupSymTable name tables table
-  in oldTable
+aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
+aCall name exprs tables table = 
+  let (oldTable, (SymTable _ prmts _)) = stLookupSymTable name tables table
+  in if length exprs == length prmts then oldTable
+  else error $ "Incorrect number of arguments of procedure " ++ name

@@ -6,12 +6,11 @@ begin
     write "KK";
 end
 
-proc asdf()
+proc main()
     int a[2];
     float b;
     bool c;
 begin
-    call p(1,2.0);
-    d := e + 2;
+    call p(1,a);
     write "Hello, World!\n";
 end
