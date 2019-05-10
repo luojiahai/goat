@@ -23,36 +23,45 @@ type Symbol = [Attribute]
 
 type Header = String
 
-data SymTable = SymTable Header HashMap
+data SymTable = SymTable Header [Prmt] HashMap
   deriving (Show, Eq)
 
 data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr 
   deriving (Show, Eq)
 
 
-symTable :: Procedure -> SymTable
-symTable proc = stProc proc
+symTable :: [Procedure] -> [SymTable]
+symTable procs = stProcs procs
 
 stBind :: String -> Symbol -> HashMap -> ((), HashMap)
 stBind key value hashMap =
   let hashMap' = Data.Map.insert key value hashMap
   in ((), hashMap')
 
-stLookup :: String -> HashMap -> (Symbol, HashMap)
-stLookup key hashMap = 
+stLookupHashMap :: String -> HashMap -> (Symbol, HashMap)
+stLookupHashMap key hashMap = 
   case Data.Map.lookup key hashMap of
     Just value -> (value, hashMap)
     Nothing -> error $ "Undefined variable " ++ key
 
--- stProcs :: [Procedure] -> [SymTable]
--- stProcs [] = []
--- stProcs [proc] = [stProc proc]
--- stProcs (proc:procs) = stProc proc : (stProcs procs)
+stLookupSymTable :: String -> [SymTable] -> SymTable -> (SymTable, SymTable)
+stLookupSymTable ident [] _ = error $ "Undefined procedure " ++ ident
+stLookupSymTable ident [(SymTable header prmts hashMap)] table = 
+  if ident == header then (table, (SymTable header prmts hashMap))
+  else error $ "Undefined procedure " ++ ident
+stLookupSymTable ident ((SymTable header prmts hashMap):tables) table =
+  if ident == header then (table, (SymTable header prmts hashMap))
+  else stLookupSymTable ident tables table
+
+stProcs :: [Procedure] -> [SymTable]
+stProcs [] = []
+stProcs [proc] = [stProc proc]
+stProcs (proc:procs) = stProc proc : (stProcs procs)
 
 stProc :: Procedure -> SymTable
 stProc (Procedure ident prmts decls stmts) = 
   let hashMap = (stPrmts prmts . stDecls decls) emptyHashMap
-  in SymTable ident hashMap
+  in SymTable ident prmts hashMap
   where emptyHashMap = Data.Map.fromList([])
 
 stPrmts :: [Prmt] -> HashMap -> HashMap
