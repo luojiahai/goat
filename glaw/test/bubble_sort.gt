@@ -1,0 +1,49 @@
+proc bubble_sort()
+    int length;
+    int collection[3];
+    int i;
+    int j;
+    bool swapped;
+    int tmp;
+begin
+    length := 3;
+    collection[0] := 3;
+    collection[1] := 6;
+    collection[2] := 2;
+    write "unsorted: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write "\n";
+
+    i := 0;
+    while i < (length - 1) do
+        swapped := false;
+        j := 0;
+        while j < ((length - 1) - i) do
+            if collection[j] > collection [j + 1] then
+                swapped := true;
+                tmp := collection[j];
+                collection[j] := collection [j + 1];
+                collection [j] := tmp;
+            fi
+            if !swapped then
+                j := length;
+            fi
+            j := j + 1;
+        od
+        i := i + 1;
+    od
+
+    write "sorted: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write "\n";
+end
+
+proc main()
+begin
+    write "Hello, this is a bubble sort.\n";
+    call bubble_sort();
+end
