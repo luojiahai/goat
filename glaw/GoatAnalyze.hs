@@ -88,7 +88,6 @@ aIdentName name tables (SymTable header prmts hashMap) =
           ++ ", actual no shape"
           ++ ", expected " ++ show (length exprs')
       otherwise -> SymTable header prmts newHashMap
-    otherwise -> error $ "InternalError: " ++ name ++ " is not AId"
 
 aIdentNameWithShape :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) = 
@@ -104,7 +103,6 @@ aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) =
       otherwise -> error $ "ShapeError: " ++ name 
         ++ ", actual " ++ show (length exprs)
         ++ ", expected no shape"
-    otherwise -> error $ "InternalError: " ++ name ++ " is not AId"
   
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aCall name exprs tables table = 
