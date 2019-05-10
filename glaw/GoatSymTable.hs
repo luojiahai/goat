@@ -33,6 +33,17 @@ data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr
 symTable :: [Procedure] -> [SymTable]
 symTable procs = stProcs procs
 
+stAttrId :: Symbol -> Attribute
+stAttrId [] = error $ "No attribute Id"
+stAttrId [attr] = 
+  case attr of
+    (AId ident) -> AId ident
+    otherwise -> error $ "No attribute Id"
+stAttrId (attr:attrs) = 
+  case attr of
+    (AId ident) -> AId ident
+    otherwise -> stAttrId attrs
+
 stBind :: String -> Symbol -> HashMap -> ((), HashMap)
 stBind key value hashMap =
   let hashMap' = Data.Map.insert key value hashMap

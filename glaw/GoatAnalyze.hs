@@ -78,13 +78,32 @@ aLvalue (LId ident) tables table = aIdent ident tables table
 aIdent :: Ident -> [SymTable] -> SymTable -> SymTable
 aIdent (Ident name) tables table = aIdentName name tables table
 aIdent (IdentWithShape name exprs) tables table = 
-  (aIdentName name tables . aExprs exprs tables) table
+  (aIdentNameWithShape name exprs tables . aExprs exprs tables) table
 
 aIdentName :: String -> [SymTable] -> SymTable -> SymTable
 aIdentName name tables (SymTable header prmts hashMap) = 
   let (value, newHashMap) = stLookupHashMap name hashMap
-  in SymTable header prmts newHashMap
+  in case stAttrId value of
+    (AId ident) -> case ident of
+      (IdentWithShape name' exprs') ->
+        error $ "ShapeError: " ++ name 
+          ++ " has shape " ++ show (length exprs')
+      otherwise -> SymTable header prmts newHashMap
+    otherwise -> error $ "TypeError: " ++ name ++ " is not an identifier"
 
+aIdentNameWithShape :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
+aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) = 
+  let (value, newHashMap) = stLookupHashMap name hashMap
+  in case stAttrId value of
+    (AId ident) -> case ident of
+      (IdentWithShape name' exprs') -> 
+        if length exprs == length exprs'
+        then SymTable header prmts newHashMap 
+        else error $ "ShapeError: " ++ name 
+          ++ " has shape " ++ show (length exprs')
+      otherwise -> error $ "ShapeError: " ++ name ++ " has no shape"
+    otherwise -> error $ "TypeError: " ++ name ++ " is not an identifier"
+  
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aCall name exprs tables table = 
   let (oldTable, (SymTable _ prmts _)) = stLookupSymTable name tables table
