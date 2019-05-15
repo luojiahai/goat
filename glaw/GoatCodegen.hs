@@ -11,3 +11,10 @@
 
 
 module GoatCodegen where
+
+import GoatAST
+import GoatSymTable
+
+
+codegen :: GoatProgram -> [SymTable] -> String
+codegen goatProgram tables = "OK"

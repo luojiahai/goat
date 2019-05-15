@@ -31,7 +31,35 @@ data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr
 
 
 symTable :: [Procedure] -> [SymTable]
-symTable procs = stProcs procs
+symTable procs = 
+  let tables = stProcs procs
+      _ = stDuplicate tables
+      _ = stMainSymTable tables
+  in tables 
+
+stDuplicate :: [SymTable] -> [SymTable]
+stDuplicate tables = 
+  foldl (\seen (SymTable header prmts hashMap) -> 
+    if stElem (SymTable header prmts hashMap) seen
+    then error $ "SemanticError: Duplicate procedure " ++ header
+    else seen ++ [(SymTable header prmts hashMap)]) [] tables
+
+stElem :: SymTable -> [SymTable] -> Bool
+stElem _ [] = False
+stElem (SymTable header prmts hashMap) [(SymTable header' prmts' hashMap')] =
+  if header == header' then True else False
+stElem (SymTable header prmts hashMap) ((SymTable header' prmts' hashMap'):tables) =
+  if header == header' then True else stElem (SymTable header prmts hashMap) tables
+
+stMainSymTable :: [SymTable] -> SymTable
+stMainSymTable [] = 
+  error $ "SemanticError: Main procedure not found"
+stMainSymTable [(SymTable header prmts hashMap)] = 
+  if header == "main" then (SymTable header prmts hashMap)
+  else error $ "SemanticError: Main procedure not found"
+stMainSymTable ((SymTable header prmts hashMap):tables) =
+  if header == "main" then (SymTable header prmts hashMap)
+  else stMainSymTable tables
 
 stAttrId :: Symbol -> Attribute
 stAttrId [] = error $ "InternalError: No AId"

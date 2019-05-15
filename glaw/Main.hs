@@ -14,6 +14,7 @@ module Main where
 import GoatParser
 import GoatPrettyPrinter
 import GoatAnalyze
+import GoatCodegen
 import System.Environment
 import System.Exit
 
@@ -40,7 +41,11 @@ processTask args Compile =
     input <- readFile filename
     let output = ast input
     case output of
-      Right tree -> putStrLn (show (analyze tree))
+      Right tree -> do
+                      let tables = analyze tree
+                      putStrLn (show tables)
+                      let code = codegen tree tables
+                      putStrLn (code)
       Left err -> do 
                     putStr "Parse error at "
                     print err
