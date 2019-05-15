@@ -31,67 +31,57 @@ data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr
 
 
 symTable :: [Procedure] -> [SymTable]
-symTable procs = 
-  let tables = stProcs procs
-      _ = stDuplicate tables
-      _ = stMainSymTable tables
-  in tables 
+symTable procs = stProcs procs
 
-stDuplicate :: [SymTable] -> [SymTable]
-stDuplicate tables = 
-  foldl (\seen (SymTable header prmts hashMap) -> 
-    if stElem (SymTable header prmts hashMap) seen
-    then error $ "SemanticError: Duplicate procedure " ++ header
-    else seen ++ [(SymTable header prmts hashMap)]) [] tables
+stDuplicate :: [SymTable] -> [SymTable] -> Bool
+stDuplicate seen [] = False
+stDuplicate seen (x:xs) = 
+  stElem x seen || stDuplicate (x:seen) xs
 
 stElem :: SymTable -> [SymTable] -> Bool
 stElem _ [] = False
-stElem (SymTable header prmts hashMap) [(SymTable header' prmts' hashMap')] =
+stElem (SymTable header _ _) [(SymTable header' _ _)] =
   if header == header' then True else False
-stElem (SymTable header prmts hashMap) ((SymTable header' prmts' hashMap'):tables) =
-  if header == header' then True else stElem (SymTable header prmts hashMap) tables
+stElem (SymTable header prmts hashMap) ((SymTable header' _ _):tables) =
+  if header == header' then True 
+  else stElem (SymTable header prmts hashMap) tables
 
-stMainSymTable :: [SymTable] -> SymTable
-stMainSymTable [] = 
-  error $ "SemanticError: Main procedure not found"
+stMainSymTable :: [SymTable] -> Maybe SymTable
+stMainSymTable [] = Nothing
 stMainSymTable [(SymTable header prmts hashMap)] = 
-  if header == "main" then (SymTable header prmts hashMap)
-  else error $ "SemanticError: Main procedure not found"
+  if header == "main" then Just (SymTable header prmts hashMap)
+  else Nothing
 stMainSymTable ((SymTable header prmts hashMap):tables) =
-  if header == "main" then (SymTable header prmts hashMap)
+  if header == "main" then Just (SymTable header prmts hashMap)
   else stMainSymTable tables
 
-stAttrId :: Symbol -> Attribute
-stAttrId [] = error $ "InternalError: No AId"
+stAttrId :: Symbol -> Maybe Attribute
+stAttrId [] = Nothing
 stAttrId [attr] = 
   case attr of
-    (AId ident) -> AId ident
-    otherwise -> error $ "InternalError: No AId"
+    (AId ident) -> Just (AId ident)
+    otherwise -> Nothing
 stAttrId (attr:attrs) = 
   case attr of
-    (AId ident) -> AId ident
+    (AId ident) -> Just (AId ident)
     otherwise -> stAttrId attrs
 
-stBind :: String -> Symbol -> HashMap -> ((), HashMap)
+stBind :: String -> Symbol -> HashMap -> HashMap
 stBind key value hashMap =
   let hashMap' = Data.Map.insert key value hashMap
-  in ((), hashMap')
+  in hashMap'
 
-stLookupHashMap :: String -> HashMap -> (Symbol, HashMap)
-stLookupHashMap key hashMap = 
-  case Data.Map.lookup key hashMap of
-    Just value -> (value, hashMap)
-    Nothing -> error $ "SemanticError: Undefined variable " ++ key
+stLookupHashMap :: String -> HashMap -> Maybe Symbol
+stLookupHashMap key hashMap = Data.Map.lookup key hashMap
 
-stLookupSymTable :: String -> [SymTable] -> SymTable -> (SymTable, SymTable)
-stLookupSymTable ident [] _ = 
-  error $ "SemanticError: Undefined procedure " ++ ident
-stLookupSymTable ident [(SymTable header prmts hashMap)] table = 
-  if ident == header then (table, (SymTable header prmts hashMap))
-  else error $ "SemanticError: Undefined procedure " ++ ident
-stLookupSymTable ident ((SymTable header prmts hashMap):tables) table =
-  if ident == header then (table, (SymTable header prmts hashMap))
-  else stLookupSymTable ident tables table
+stLookupSymTable :: String -> [SymTable] -> Maybe SymTable
+stLookupSymTable ident [] = Nothing
+stLookupSymTable ident [(SymTable header prmts hashMap)] = 
+  if ident == header then Just (SymTable header prmts hashMap)
+  else Nothing
+stLookupSymTable ident ((SymTable header prmts hashMap):tables) =
+  if ident == header then Just (SymTable header prmts hashMap)
+  else stLookupSymTable ident tables 
 
 stProcs :: [Procedure] -> [SymTable]
 stProcs [] = []
@@ -111,11 +101,11 @@ stPrmts (prmt:prmts) hashMap = (stPrmt prmt . stPrmts prmts) hashMap
 
 stPrmt :: Prmt -> HashMap -> HashMap
 stPrmt (Prmt Val basetype name) hashMap = 
-  let (_, newHashMap) = stBind name symbol hashMap
+  let newHashMap = stBind name symbol hashMap
   in newHashMap
   where symbol = [AId (Ident name), AType basetype]
 stPrmt (Prmt Ref basetype name) hashMap = 
-  let (_, newHashMap) = stBind name symbol hashMap
+  let newHashMap = stBind name symbol hashMap
   in newHashMap
   where symbol = [AId (Ident name), AType basetype]
 
@@ -126,10 +116,10 @@ stDecls (decl:decls) hashMap = (stDecl decl . stDecls decls) hashMap
 
 stDecl :: Decl -> HashMap -> HashMap
 stDecl (Decl (Ident name) basetype) hashMap =
-  let (_, newHashMap) = stBind name symbol hashMap
+  let newHashMap = stBind name symbol hashMap
   in newHashMap
   where symbol = [AId (Ident name), AType basetype]
 stDecl (Decl (IdentWithShape name exprs) basetype) hashMap =
-  let (_, newHashMap) = stBind name symbol hashMap
+  let newHashMap = stBind name symbol hashMap
   in newHashMap
   where symbol = [AId (IdentWithShape name exprs), AType basetype]

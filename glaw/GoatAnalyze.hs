@@ -19,8 +19,25 @@ import GoatSymTable
 
 analyze :: GoatProgram -> [SymTable]
 analyze (GoatProgram procs) = 
-  aProcs procs tables
+  case (aCheckMain tables) && (aCheckDuplicate tables) of
+    True -> tables
+    False -> error $ "InternalError"
   where tables = symTable procs
+
+aCheckMain :: [SymTable] -> Bool
+aCheckMain tables =
+  case stMainSymTable tables of
+    Just (SymTable header prmts hashMap) -> 
+      case length prmts == 0 of
+        True -> True
+        False -> error $ "SemanticError: Main procedure surplus arguments"
+    Nothing -> error $ "SemanticError: Main procedure not found"
+
+aCheckDuplicate :: [SymTable] -> Bool
+aCheckDuplicate tables = 
+  case stDuplicate [] tables of
+    False -> True
+    True -> error $ "SemanticError: Duplicate procedures"
 
 aProcs :: [Procedure] -> [SymTable] -> [SymTable]
 aProcs [] _ = []
@@ -29,8 +46,9 @@ aProcs (proc:procs) tables = aProc proc tables : (aProcs procs tables)
 
 aProc :: Procedure -> [SymTable] -> SymTable
 aProc (Procedure ident prmts decls stmts) tables = 
-  aStmts stmts tables table
-  where (_, table) = stLookupSymTable ident tables table
+  case stLookupSymTable ident tables of
+    Just table -> aStmts stmts tables table
+    Nothing -> error $ "SemanticError: Undefined procedure " ++ ident
 
 aStmts :: [Stmt] -> [SymTable] -> SymTable -> SymTable
 aStmts [] _ table = table
@@ -80,34 +98,42 @@ aIdent (IdentWithShape name exprs) tables table =
 
 aIdentName :: String -> [SymTable] -> SymTable -> SymTable
 aIdentName name tables (SymTable header prmts hashMap) = 
-  let (value, newHashMap) = stLookupHashMap name hashMap
-  in case stAttrId value of
-    (AId ident) -> case ident of
-      (IdentWithShape name' exprs') ->
-        error $ "ShapeError: " ++ name 
-          ++ ", actual no shape"
-          ++ ", expected " ++ show (length exprs')
-      otherwise -> SymTable header prmts newHashMap
+  case stLookupHashMap name hashMap of
+    Just value -> 
+      case stAttrId value of
+        Just (AId ident) -> case ident of
+          (IdentWithShape name' exprs') ->
+            error $ "ShapeError: " ++ name 
+              ++ ", actual no shape"
+              ++ ", expected " ++ show (length exprs')
+          otherwise -> SymTable header prmts hashMap
+        Nothing -> error $ "InternalError: No AId"
+    Nothing -> error $ "SemanticError: Undefined variable " ++ name
 
 aIdentNameWithShape :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) = 
-  let (value, newHashMap) = stLookupHashMap name hashMap
-  in case stAttrId value of
-    (AId ident) -> case ident of
-      (IdentWithShape name' exprs') -> 
-        if length exprs == length exprs'
-        then SymTable header prmts newHashMap 
-        else error $ "ShapeError: " ++ name 
-          ++ ", actual " ++ show (length exprs)
-          ++ ", expected " ++ show (length exprs')
-      otherwise -> error $ "ShapeError: " ++ name 
-        ++ ", actual " ++ show (length exprs)
-        ++ ", expected no shape"
+  case stLookupHashMap name hashMap of
+    Just value -> 
+      case stAttrId value of
+        Just (AId ident) -> case ident of
+          (IdentWithShape name' exprs') -> 
+            if length exprs == length exprs'
+            then SymTable header prmts hashMap 
+            else error $ "ShapeError: " ++ name 
+              ++ ", actual " ++ show (length exprs)
+              ++ ", expected " ++ show (length exprs')
+          otherwise -> error $ "ShapeError: " ++ name 
+            ++ ", actual " ++ show (length exprs)
+            ++ ", expected no shape"
+        Nothing -> error $ "InternalError: No AId"
+    Nothing -> error $ "SemanticError: Undefined variable " ++ name
   
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
 aCall name exprs tables table = 
-  let (oldTable, (SymTable _ prmts _)) = stLookupSymTable name tables table
-  in if length exprs == length prmts then oldTable
-  else error $ "CallError: Incorrect number of arguments for " ++ name
-    ++ ", actual " ++ show (length exprs)
-    ++ ", expected " ++ show (length prmts)
+  case stLookupSymTable name tables of
+    Just (SymTable ident prmts hashMap) -> 
+      if length exprs == length prmts then table
+      else error $ "CallError: Incorrect number of arguments for " ++ ident
+        ++ ", actual " ++ show (length exprs)
+        ++ ", expected " ++ show (length prmts)
+    Nothing -> error $ "SemanticError: Undefined procedure " ++ name
