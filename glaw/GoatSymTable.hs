@@ -68,8 +68,9 @@ stAttrId (attr:attrs) =
 
 stBind :: String -> Symbol -> HashMap -> HashMap
 stBind key value hashMap =
-  let hashMap' = Data.Map.insert key value hashMap
-  in hashMap'
+  case Data.Map.lookup key hashMap of 
+    Just value -> error $ "Error: Duplicate variable " ++ key
+    Nothing -> let hashMap' = Data.Map.insert key value hashMap in hashMap'
 
 stLookupHashMap :: String -> HashMap -> Maybe Symbol
 stLookupHashMap key hashMap = Data.Map.lookup key hashMap

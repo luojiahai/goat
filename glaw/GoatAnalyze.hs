@@ -19,7 +19,7 @@ import GoatSymTable
 
 analyze :: GoatProgram -> [SymTable]
 analyze (GoatProgram procs) = 
-  case (aCheckMain tables) && (aCheckDuplicate tables) of
+  case (aCheckMain tables) && (aCheckDuplicateProc tables) of
     True -> tables
     False -> error $ "InternalError"
   where tables = symTable procs
@@ -33,8 +33,8 @@ aCheckMain tables =
         False -> error $ "SemanticError: Main procedure surplus arguments"
     Nothing -> error $ "SemanticError: Main procedure not found"
 
-aCheckDuplicate :: [SymTable] -> Bool
-aCheckDuplicate tables = 
+aCheckDuplicateProc :: [SymTable] -> Bool
+aCheckDuplicateProc tables = 
   case stDuplicate [] tables of
     False -> True
     True -> error $ "SemanticError: Duplicate procedures"
@@ -103,7 +103,7 @@ aIdentName name tables (SymTable header prmts hashMap) =
       case stAttrId value of
         Just (AId ident) -> case ident of
           (IdentWithShape name' exprs') ->
-            error $ "ShapeError: " ++ name 
+            error $ "SemanticError: " ++ name 
               ++ ", actual no shape"
               ++ ", expected " ++ show (length exprs')
           otherwise -> SymTable header prmts hashMap
@@ -119,10 +119,10 @@ aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) =
           (IdentWithShape name' exprs') -> 
             if length exprs == length exprs'
             then SymTable header prmts hashMap 
-            else error $ "ShapeError: " ++ name 
+            else error $ "SemanticError: " ++ name 
               ++ ", actual " ++ show (length exprs)
               ++ ", expected " ++ show (length exprs')
-          otherwise -> error $ "ShapeError: " ++ name 
+          otherwise -> error $ "SemanticError: " ++ name 
             ++ ", actual " ++ show (length exprs)
             ++ ", expected no shape"
         Nothing -> error $ "InternalError: No AId"
@@ -133,7 +133,8 @@ aCall name exprs tables table =
   case stLookupSymTable name tables of
     Just (SymTable ident prmts hashMap) -> 
       if length exprs == length prmts then table
-      else error $ "CallError: Incorrect number of arguments for " ++ ident
+      else error $ "SemanticError: Incorrect number of arguments"
+        ++ " when calling " ++ ident
         ++ ", actual " ++ show (length exprs)
         ++ ", expected " ++ show (length prmts)
     Nothing -> error $ "SemanticError: Undefined procedure " ++ name
