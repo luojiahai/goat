@@ -18,7 +18,7 @@ import SymTable
 
 analyze :: Program -> [SymTable]
 analyze (Program procs) = 
-  case aProcs procs tables of
+  case (aProcs procs tables) of
     True -> tables
     False -> error $ "InternalError"
   where tables = symTable procs
@@ -39,8 +39,9 @@ aCheckDuplicateProc tables =
     True -> error $ "SemanticError: Duplicate procedures"
 
 aProcs :: [Procedure] -> [SymTable] -> Bool
-aProcs [] tables = (aCheckMain tables) && (aCheckDuplicateProc tables)
-aProcs [proc] tables = aProc proc tables
+aProcs [] tables = True
+aProcs [proc] tables = 
+  (aProc proc tables) && (aCheckMain tables) && (aCheckDuplicateProc tables)
 aProcs (proc:procs) tables = (aProc proc tables) && (aProcs procs tables)
 
 aProc :: Procedure -> [SymTable] -> Bool
@@ -62,8 +63,8 @@ aStmt (Read pos lvalue) tables table =
   aLvalue lvalue tables table
 aStmt (Write pos expr) tables table = 
   aExpr expr tables table
-aStmt (ProcCall pos name exprs) tables table = 
-  (aCall name exprs tables table) && (aExprs exprs tables table)
+aStmt (ProcCall pos ident exprs) tables table = 
+  (aCall ident exprs tables table) && (aExprs exprs tables table)
 aStmt (If pos expr stmts) tables table = 
   (aExpr expr tables table) && (aStmts stmts tables table)
 aStmt (IfElse pos expr stmts1 stmts2) tables table = 
@@ -94,55 +95,58 @@ aExpr (BinOpExp pos binOp expr1 expr2) tables table = True
 aExpr (UnaryMinus pos expr) tables table = True
 
 aLvalue :: Lvalue -> [SymTable] -> SymTable -> Bool
-aLvalue (LId pos ident) tables table = True
-aLvalue (LArrayRef pos ident expr) tables table = True
-aLvalue (LMatrixRef pos ident expr1 expr2) tables table = True
+aLvalue (LId pos ident) tables table = aIdBase ident tables table
+aLvalue (LArrayRef pos ident expr) tables table = 
+  aIdArray ident tables table
+aLvalue (LMatrixRef pos ident expr1 expr2) tables table = 
+  aIdMatrix ident tables table
 
--- aIdBase :: Ident -> [SymTable] -> SymTable -> SymTable
+aIdBase :: Ident -> [SymTable] -> SymTable -> Bool
+aIdBase ident tables (SymTable header prmts hashMap) =
+  case stLookupHashMap ident hashMap of
+    Just value -> 
+      case stAGoatType value of
+        Just (AGoatType goatType) -> case goatType of
+          (Base baseType) -> True
+          otherwise ->
+            error $ "SemanticError: Wrong GoatType for " ++ ident
+              ++ ", expected: Base"
+        Nothing -> error $ "InternalError: No AGoatType"
+    Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
--- aIdArray :: Ident -> [SymTable] -> SymTable -> SymTable
+aIdArray :: Ident -> [SymTable] -> SymTable -> Bool
+aIdArray ident tables (SymTable header prmts hashMap) =
+  case stLookupHashMap ident hashMap of
+    Just value -> 
+      case stAGoatType value of
+        Just (AGoatType goatType) -> case goatType of
+          (Array baseType i) -> True
+          otherwise ->
+            error $ "SemanticError: Wrong GoatType for " ++ ident
+              ++ ", expected: Array"
+        Nothing -> error $ "InternalError: No AGoatType"
+    Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
--- aIdMatrix :: Ident -> [SymTable] -> SymTable -> SymTable
-
--- aIdentName :: String -> [SymTable] -> SymTable -> SymTable
--- aIdentName name tables (SymTable header prmts hashMap) = 
---   case stLookupHashMap name hashMap of
---     Just value -> 
---       case stAttrId value of
---         Just (AId ident) -> case ident of
---           (IdentWithShape name' exprs') ->
---             error $ "SemanticError: " ++ name 
---               ++ ", actual no shape"
---               ++ ", expected " ++ show (length exprs')
---           otherwise -> SymTable header prmts hashMap
---         Nothing -> error $ "InternalError: No AId"
---     Nothing -> error $ "SemanticError: Undefined variable " ++ name
-
--- aIdentNameWithShape :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
--- aIdentNameWithShape name exprs tables (SymTable header prmts hashMap) = 
---   case stLookupHashMap name hashMap of
---     Just value -> 
---       case stAttrId value of
---         Just (AId ident) -> case ident of
---           (IdentWithShape name' exprs') -> 
---             if length exprs == length exprs'
---             then SymTable header prmts hashMap 
---             else error $ "SemanticError: " ++ name 
---               ++ ", actual " ++ show (length exprs)
---               ++ ", expected " ++ show (length exprs')
---           otherwise -> error $ "SemanticError: " ++ name 
---             ++ ", actual " ++ show (length exprs)
---             ++ ", expected no shape"
---         Nothing -> error $ "InternalError: No AId"
---     Nothing -> error $ "SemanticError: Undefined variable " ++ name
+aIdMatrix :: Ident -> [SymTable] -> SymTable -> Bool
+aIdMatrix ident tables (SymTable header prmts hashMap) =
+  case stLookupHashMap ident hashMap of
+    Just value -> 
+      case stAGoatType value of
+        Just (AGoatType goatType) -> case goatType of
+          (Matrix baseType i j) -> True
+          otherwise ->
+            error $ "SemanticError: Wrong GoatType for " ++ ident
+              ++ ", expected: Matrix"
+        Nothing -> error $ "InternalError: No AGoatType"
+    Nothing -> error $ "SemanticError: Undefined variable " ++ ident
   
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> Bool
-aCall name exprs tables table = 
-  case stLookupSymTable name tables of
+aCall ident exprs tables table = 
+  case stLookupSymTable ident tables of
     Just (SymTable ident prmts hashMap) -> 
       if length exprs == length prmts then True
       else error $ "SemanticError: Incorrect number of arguments"
         ++ " when calling " ++ ident
         ++ ", actual " ++ show (length exprs)
         ++ ", expected " ++ show (length prmts)
-    Nothing -> error $ "SemanticError: Undefined procedure " ++ name
+    Nothing -> error $ "SemanticError: Undefined procedure " ++ ident

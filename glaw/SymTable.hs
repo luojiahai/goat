@@ -67,6 +67,17 @@ stAType (attr:attrs) =
     (AType baseType) -> Just (AType baseType)
     otherwise -> stAType attrs
 
+stAGoatType :: Symbol -> Maybe Attribute
+stAGoatType [] = Nothing
+stAGoatType [attr] = 
+  case attr of
+    (AGoatType goatType) -> Just (AGoatType goatType)
+    otherwise -> Nothing
+stAGoatType (attr:attrs) = 
+  case attr of
+    (AGoatType goatType) -> Just (AGoatType goatType)
+    otherwise -> stAGoatType attrs
+
 stBind :: String -> Symbol -> HashMap -> HashMap
 stBind key value hashMap =
   case Data.Map.lookup key hashMap of 
