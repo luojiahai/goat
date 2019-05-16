@@ -18,10 +18,10 @@ import SymTable
 
 analyze :: Program -> [SymTable]
 analyze (Program procs) = 
-  case (aCheckMain tables) && (aCheckDuplicateProc tables) of
+  case aProcs procs tables of
     True -> tables
     False -> error $ "InternalError"
-  where tables = aProcs procs (symTable procs)
+  where tables = symTable procs
 
 aCheckMain :: [SymTable] -> Bool
 aCheckMain tables =
@@ -38,64 +38,71 @@ aCheckDuplicateProc tables =
     False -> True
     True -> error $ "SemanticError: Duplicate procedures"
 
-aProcs :: [Procedure] -> [SymTable] -> [SymTable]
-aProcs [] _ = []
-aProcs [proc] tables = [aProc proc tables]
-aProcs (proc:procs) tables = aProc proc tables : (aProcs procs tables)
+aProcs :: [Procedure] -> [SymTable] -> Bool
+aProcs [] tables = (aCheckMain tables) && (aCheckDuplicateProc tables)
+aProcs [proc] tables = aProc proc tables
+aProcs (proc:procs) tables = (aProc proc tables) && (aProcs procs tables)
 
-aProc :: Procedure -> [SymTable] -> SymTable
+aProc :: Procedure -> [SymTable] -> Bool
 aProc (Procedure pos ident prmts decls stmts) tables = 
   case stLookupSymTable ident tables of
     Just table -> aStmts stmts tables table
     Nothing -> error $ "SemanticError: Undefined procedure " ++ ident
 
-aStmts :: [Stmt] -> [SymTable] -> SymTable -> SymTable
-aStmts [] _ table = table
+aStmts :: [Stmt] -> [SymTable] -> SymTable -> Bool
+aStmts [] _ table = True
 aStmts [stmt] tables table = aStmt stmt tables table
 aStmts (stmt:stmts) tables table = 
-  (aStmt stmt tables . aStmts stmts tables) table
+  (aStmt stmt tables table) && (aStmts stmts tables table)
 
-aStmt :: Stmt -> [SymTable] -> SymTable -> SymTable
+aStmt :: Stmt -> [SymTable] -> SymTable -> Bool
 aStmt (Assign pos lvalue expr) tables table = 
-  (aLvalue lvalue tables . aExpr expr tables) table
+  (aLvalue lvalue tables table) && (aExpr expr tables table)
 aStmt (Read pos lvalue) tables table = 
   aLvalue lvalue tables table
 aStmt (Write pos expr) tables table = 
   aExpr expr tables table
 aStmt (ProcCall pos name exprs) tables table = 
-  (aCall name exprs tables . aExprs exprs tables) table
+  (aCall name exprs tables table) && (aExprs exprs tables table)
 aStmt (If pos expr stmts) tables table = 
-  (aExpr expr tables . aStmts stmts tables) table
+  (aExpr expr tables table) && (aStmts stmts tables table)
 aStmt (IfElse pos expr stmts1 stmts2) tables table = 
-  (aExpr expr tables . aStmts stmts1 tables . aStmts stmts2 tables) table
+  (aExpr expr tables table) && (aStmts stmts1 tables table) 
+  && (aStmts stmts2 tables table)
 aStmt (While pos expr stmts) tables table = 
-  (aExpr expr tables . aStmts stmts tables) table
+  (aExpr expr tables table) && (aStmts stmts tables table)
 
-aExprs :: [Expr] -> [SymTable] -> SymTable -> SymTable
-aExprs [] _ table = table
+aExprs :: [Expr] -> [SymTable] -> SymTable -> Bool
+aExprs [] _ table = True
 aExprs [expr] tables table = aExpr expr tables table
 aExprs (expr:exprs) tables table = 
-  (aExpr expr tables . aExprs exprs tables) table
+  (aExpr expr tables table) && (aExprs exprs tables table)
 
-aExpr :: Expr -> [SymTable] -> SymTable -> SymTable
-aExpr (BoolCon pos const) tables table = table
-aExpr (And pos expr1 expr2) tables table = table
-aExpr (Or pos expr1 expr2) tables table = table
-aExpr (Not pos expr) tables table = table
-aExpr (Rel pos relOp expr1 expr2) tables table = table
-aExpr (IntCon pos const) tables table = table
-aExpr (FloatCon pos const) tables table = table
-aExpr (StrCon pos const) tables table = table
-aExpr (Id pos ident) tables table = table
-aExpr (ArrayRef pos ident expr) tables table = table
-aExpr (MatrixRef pos ident expr1 expr2) tables table = table
-aExpr (BinOpExp pos binOp expr1 expr2) tables table = table
-aExpr (UnaryMinus pos expr) tables table = table
+aExpr :: Expr -> [SymTable] -> SymTable -> Bool
+aExpr (BoolCon pos const) tables table = True
+aExpr (And pos expr1 expr2) tables table = True
+aExpr (Or pos expr1 expr2) tables table = True
+aExpr (Not pos expr) tables table = True
+aExpr (Rel pos relOp expr1 expr2) tables table = True
+aExpr (IntCon pos const) tables table = True
+aExpr (FloatCon pos const) tables table = True
+aExpr (StrCon pos const) tables table = True
+aExpr (Id pos ident) tables table = True
+aExpr (ArrayRef pos ident expr) tables table = True
+aExpr (MatrixRef pos ident expr1 expr2) tables table = True
+aExpr (BinOpExp pos binOp expr1 expr2) tables table = True
+aExpr (UnaryMinus pos expr) tables table = True
 
-aLvalue :: Lvalue -> [SymTable] -> SymTable -> SymTable
-aLvalue (LId pos ident) tables table = table
-aLvalue (LArrayRef pos ident expr) tables table = table
-aLvalue (LMatrixRef pos ident expr1 expr2) tables table = table
+aLvalue :: Lvalue -> [SymTable] -> SymTable -> Bool
+aLvalue (LId pos ident) tables table = True
+aLvalue (LArrayRef pos ident expr) tables table = True
+aLvalue (LMatrixRef pos ident expr1 expr2) tables table = True
+
+-- aIdBase :: Ident -> [SymTable] -> SymTable -> SymTable
+
+-- aIdArray :: Ident -> [SymTable] -> SymTable -> SymTable
+
+-- aIdMatrix :: Ident -> [SymTable] -> SymTable -> SymTable
 
 -- aIdentName :: String -> [SymTable] -> SymTable -> SymTable
 -- aIdentName name tables (SymTable header prmts hashMap) = 
@@ -129,11 +136,11 @@ aLvalue (LMatrixRef pos ident expr1 expr2) tables table = table
 --         Nothing -> error $ "InternalError: No AId"
 --     Nothing -> error $ "SemanticError: Undefined variable " ++ name
   
-aCall :: String -> [Expr] -> [SymTable] -> SymTable -> SymTable
+aCall :: String -> [Expr] -> [SymTable] -> SymTable -> Bool
 aCall name exprs tables table = 
   case stLookupSymTable name tables of
     Just (SymTable ident prmts hashMap) -> 
-      if length exprs == length prmts then table
+      if length exprs == length prmts then True
       else error $ "SemanticError: Incorrect number of arguments"
         ++ " when calling " ++ ident
         ++ ", actual " ++ show (length exprs)
