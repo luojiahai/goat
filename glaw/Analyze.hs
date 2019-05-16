@@ -18,7 +18,7 @@ import SymTable
 
 analyze :: Program -> [SymTable]
 analyze (Program procs) = 
-  case (aProcs procs tables) of
+  case aProcs procs tables of
     True -> tables
     False -> error $ "InternalError"
   where tables = symTable procs
