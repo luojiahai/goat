@@ -10,9 +10,8 @@
 ---------------------------------------------------------------------
 
 
-module GoatSymTable where
+module SymTable where
 
-import GoatParser
 import GoatAST
 import qualified Data.Map
 
@@ -23,10 +22,12 @@ type Symbol = [Attribute]
 
 type Header = String
 
-data SymTable = SymTable Header [Prmt] HashMap
+data SymTable = SymTable Header [FormalArgSpec] HashMap
   deriving (Show, Eq)
 
-data Attribute = ASlot Int | AId Ident | AType BaseType | AValue Expr 
+data Attribute = 
+  ASlot Int | APos Pos | AParMode ParMode 
+  | AType BaseType | AValue Expr | AGoatType GoatType
   deriving (Show, Eq)
 
 
@@ -55,21 +56,21 @@ stMainSymTable ((SymTable header prmts hashMap):tables) =
   if header == "main" then Just (SymTable header prmts hashMap)
   else stMainSymTable tables
 
-stAttrId :: Symbol -> Maybe Attribute
-stAttrId [] = Nothing
-stAttrId [attr] = 
+stAType :: Symbol -> Maybe Attribute
+stAType [] = Nothing
+stAType [attr] = 
   case attr of
-    (AId ident) -> Just (AId ident)
+    (AType baseType) -> Just (AType baseType)
     otherwise -> Nothing
-stAttrId (attr:attrs) = 
+stAType (attr:attrs) = 
   case attr of
-    (AId ident) -> Just (AId ident)
-    otherwise -> stAttrId attrs
+    (AType baseType) -> Just (AType baseType)
+    otherwise -> stAType attrs
 
 stBind :: String -> Symbol -> HashMap -> HashMap
 stBind key value hashMap =
   case Data.Map.lookup key hashMap of 
-    Just value -> error $ "Error: Duplicate variable " ++ key
+    Just value -> error $ "SemanticError: Duplicate variable " ++ key
     Nothing -> let hashMap' = Data.Map.insert key value hashMap in hashMap'
 
 stLookupHashMap :: String -> HashMap -> Maybe Symbol
@@ -90,25 +91,21 @@ stProcs [proc] = [stProc proc]
 stProcs (proc:procs) = stProc proc : (stProcs procs)
 
 stProc :: Procedure -> SymTable
-stProc (Procedure ident prmts decls stmts) = 
+stProc (Procedure pos ident prmts decls stmts) = 
   let hashMap = (stPrmts prmts . stDecls decls) emptyHashMap
   in SymTable ident prmts hashMap
   where emptyHashMap = Data.Map.fromList([])
 
-stPrmts :: [Prmt] -> HashMap -> HashMap
+stPrmts :: [FormalArgSpec] -> HashMap -> HashMap
 stPrmts [] hashMap = hashMap
 stPrmts [prmt] hashMap = stPrmt prmt hashMap
 stPrmts (prmt:prmts) hashMap = (stPrmt prmt . stPrmts prmts) hashMap
 
-stPrmt :: Prmt -> HashMap -> HashMap
-stPrmt (Prmt Val basetype name) hashMap = 
-  let newHashMap = stBind name symbol hashMap
+stPrmt :: FormalArgSpec -> HashMap -> HashMap
+stPrmt (FormalArgSpec pos parMode baseType ident) hashMap = 
+  let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [AId (Ident name), AType basetype]
-stPrmt (Prmt Ref basetype name) hashMap = 
-  let newHashMap = stBind name symbol hashMap
-  in newHashMap
-  where symbol = [AId (Ident name), AType basetype]
+  where symbol = [APos pos, AParMode parMode, AType baseType]
 
 stDecls :: [Decl] -> HashMap -> HashMap
 stDecls [] hashMap = hashMap
@@ -116,11 +113,15 @@ stDecls [decl] hashMap = stDecl decl hashMap
 stDecls (decl:decls) hashMap = (stDecl decl . stDecls decls) hashMap
 
 stDecl :: Decl -> HashMap -> HashMap
-stDecl (Decl (Ident name) basetype) hashMap =
-  let newHashMap = stBind name symbol hashMap
+stDecl (Decl pos ident (Base baseType)) hashMap =
+  let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [AId (Ident name), AType basetype]
-stDecl (Decl (IdentWithShape name exprs) basetype) hashMap =
-  let newHashMap = stBind name symbol hashMap
+  where symbol = [APos pos, AType baseType, AGoatType (Base baseType)]
+stDecl (Decl pos ident (Array baseType i)) hashMap =
+  let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [AId (IdentWithShape name exprs), AType basetype]
+  where symbol = [APos pos, AType baseType, AGoatType (Array baseType i)]
+stDecl (Decl pos ident (Matrix baseType i j)) hashMap =
+  let newHashMap = stBind ident symbol hashMap
+  in newHashMap
+  where symbol = [APos pos, AType baseType, AGoatType (Matrix baseType i j)]

@@ -36,14 +36,13 @@ main =
 processTask :: [String] -> Task -> IO ()
 processTask args Compile =
   do
-    putStrLn "Sorry, cannot generate code yet"
     let [filename] = args
     input <- readFile filename
     let output = ast input
     case output of
       Right tree -> do
                       let tables = analyze tree
-                      putStrLn (show tables)
+                      -- putStrLn (show tables)
                       let code = codegen tree tables
                       putStrLn (code)
       Left err -> do 
