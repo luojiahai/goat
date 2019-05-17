@@ -14,8 +14,9 @@ module CodeGen where
 
 import GoatAST
 import SymTable
+import Control.Monad.State
 
--- type LabelCounter = Int
+type LabelCounter = Int 
 
 -- type Env = String
 
@@ -32,31 +33,37 @@ import SymTable
 --         (code', st1) = gen st0
 --         CodeGen gen' = f code'
 --       in gen' st1
---       )
+--     )
 
 -- getState :: CodeGen State
 -- getState = 
 --   CodeGen (\st -> (st, st))
 
--- getLabelCounter :: CodeGen LabelCounter 
--- getLabelCounter =
---   do 
---     State _ lc <- getState
---     return lc
+type CodeGen a = State LabelCounter a
 
--- incLabelCounter :: CodeGen ()
--- incLabelCounter =
---   CodeGen (\(State env lc) -> ((), State env (lc + 1)))
+getLabelCounter :: CodeGen LabelCounter
+getLabelCounter =
+  do 
+    label <- get
+    return label
 
+incLabelCounter :: CodeGen ()
+incLabelCounter =
+  do
+    label <- get
+    put (label + 1)
+    return ()
 
 indentation = "    "
+startState = 1
+labelCounter = getLabelCounter
 
 codegen :: Program -> [SymTable] -> String
 codegen (Program procs) tables = 
   do
     str <- 
-      indentation ++ "call main\n"
-      ++ indentation ++ "halt\n"
+      indentation ++ "call proc_main\n"
+      ++ indentation ++ "halt"
       ++ (cProcs procs tables)
     return str
 
@@ -71,11 +78,66 @@ cProc (Procedure pos ident prmts decls stmts) tables =
     Just table ->
       do
         str <-
-          ident ++ ":\n"
+          "\nproc_" ++ ident ++ ":\n"
+          ++ cPushStackFrame table
+          ++ cPrmts prmts table
           ++ cStmts stmts table
           ++ indentation ++ "return"
         return str
     Nothing -> error $ "RuntimeError: Procedure " ++ ident ++ " not found"
+
+cPushStackFrame :: SymTable -> String
+cPushStackFrame (SymTable header prmts hashMap) = 
+  indentation ++ "push_stack_frame " ++ show (stSize hashMap) ++ "\n"
+
+cPrmts :: [FormalArgSpec] -> SymTable -> String
+cPrmts [] _ = ""
+cPrmts [prmt] table = cPrmt prmt table
+cPrmts (prmt:prmts) table = cPrmt prmt table ++ cPrmts prmts table
+
+cPrmt :: FormalArgSpec -> SymTable -> String
+cPrmt (FormalArgSpec pos parMode baseType ident) 
+  (SymTable header prmts hashMap) =
+  case baseType of
+    BoolType -> 
+      cBoolConst False 
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = 0
+    IntType -> 
+      cIntConst 0
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = 0
+    FloatType -> 
+      cFloatConst 0.0
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = 0
+    StringType -> 
+      cStringConst ""
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = 0
+
+cIntConst :: Int -> String
+cIntConst const = 
+  indentation ++ "int_const " ++ "r0, " 
+  ++ show const ++ "\n"
+
+cFloatConst :: Float -> String
+cFloatConst const = 
+  indentation ++ "real_const " ++ "r0, " 
+  ++ show const ++ "\n"
+
+cStringConst :: String -> String
+cStringConst const = 
+  indentation ++ "string_const " ++ "r0, " 
+  ++ ('\"' : (const ++ "\"")) ++ "\n"
+
+cBoolConst :: Bool -> String
+cBoolConst const = 
+  indentation ++ "bool_const " ++ "r0, " ++
+  case const of
+    True -> "true"
+    False -> "false"
+  ++ "\n"
 
 cStmts :: [Stmt] -> SymTable -> String
 cStmts [] _ = ""
@@ -96,5 +158,5 @@ cExpr (StrCon pos s) table =
   do
     str <-
       indentation ++ "string_const "
-      ++ "r0" ++ ", " ++ '\"' : (s ++ "\"") ++ "\n"
+      ++ "r0" ++ ", " ++ ('\"' : (s ++ "\"")) ++ "\n"
     return str

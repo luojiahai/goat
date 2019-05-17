@@ -36,8 +36,8 @@ main
                  Right tree -> do
                                  let tables = analyze tree
                                  putStrLn (show tables)
-                                --  let code = codegen tree tables
-                                --  putStrLn (code)
+                                 let code = codegen tree tables
+                                 putStrLn (code)
                  Left err -> do 
                                putStr "Parse error at "
                                print err

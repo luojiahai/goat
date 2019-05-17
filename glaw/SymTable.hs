@@ -34,6 +34,9 @@ data Attribute =
 symTable :: [Procedure] -> [SymTable]
 symTable procs = stProcs procs
 
+stSize :: HashMap -> Int
+stSize = Data.Map.size
+
 stDuplicate :: [SymTable] -> [SymTable] -> Bool
 stDuplicate seen [] = False
 stDuplicate seen (x:xs) = 
@@ -66,6 +69,17 @@ stAType (attr:attrs) =
   case attr of
     (AType baseType) -> Just (AType baseType)
     otherwise -> stAType attrs
+
+stASlot :: Symbol -> Maybe Attribute
+stASlot [] = Nothing
+stASlot [attr] = 
+  case attr of
+    (ASlot slot) -> Just (ASlot slot)
+    otherwise -> Nothing
+stASlot (attr:attrs) = 
+  case attr of
+    (ASlot slot) -> Just (ASlot slot)
+    otherwise -> stASlot attrs
 
 stAGoatType :: Symbol -> Maybe Attribute
 stAGoatType [] = Nothing
@@ -103,36 +117,43 @@ stProcs (proc:procs) = stProc proc : (stProcs procs)
 
 stProc :: Procedure -> SymTable
 stProc (Procedure pos ident prmts decls stmts) = 
-  let hashMap = (stPrmts prmts . stDecls decls) emptyHashMap
+  let hashMap = (stPrmts prmts 0 . stDecls decls (length prmts)) emptyHashMap
   in SymTable ident prmts hashMap
   where emptyHashMap = Data.Map.fromList([])
 
-stPrmts :: [FormalArgSpec] -> HashMap -> HashMap
-stPrmts [] hashMap = hashMap
-stPrmts [prmt] hashMap = stPrmt prmt hashMap
-stPrmts (prmt:prmts) hashMap = (stPrmt prmt . stPrmts prmts) hashMap
+stPrmts :: [FormalArgSpec] -> Int -> HashMap -> HashMap
+stPrmts [] _ hashMap = hashMap
+stPrmts [prmt] slot hashMap = stPrmt prmt slot hashMap
+stPrmts (prmt:prmts) slot hashMap = 
+  (stPrmt prmt slot . stPrmts prmts (slot+1)) hashMap
 
-stPrmt :: FormalArgSpec -> HashMap -> HashMap
-stPrmt (FormalArgSpec pos parMode baseType ident) hashMap = 
+stPrmt :: FormalArgSpec -> Int -> HashMap -> HashMap
+stPrmt (FormalArgSpec pos parMode baseType ident) slot hashMap = 
   let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [APos pos, AParMode parMode, AType baseType, AGoatType (Base baseType)]
+  where symbol = [ASlot slot, APos pos, 
+                  AParMode parMode, AType baseType, 
+                  AGoatType (Base baseType)]
 
-stDecls :: [Decl] -> HashMap -> HashMap
-stDecls [] hashMap = hashMap
-stDecls [decl] hashMap = stDecl decl hashMap
-stDecls (decl:decls) hashMap = (stDecl decl . stDecls decls) hashMap
+stDecls :: [Decl] -> Int -> HashMap -> HashMap
+stDecls [] _ hashMap = hashMap
+stDecls [decl] slot hashMap = stDecl decl slot hashMap
+stDecls (decl:decls) slot hashMap = 
+  (stDecl decl slot . stDecls decls (slot+1)) hashMap
 
-stDecl :: Decl -> HashMap -> HashMap
-stDecl (Decl pos ident (Base baseType)) hashMap =
+stDecl :: Decl -> Int -> HashMap -> HashMap
+stDecl (Decl pos ident (Base baseType)) slot hashMap =
   let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [APos pos, AType baseType, AGoatType (Base baseType)]
-stDecl (Decl pos ident (Array baseType i)) hashMap =
+  where symbol = [ASlot slot, APos pos, 
+                  AType baseType, AGoatType (Base baseType)]
+stDecl (Decl pos ident (Array baseType i)) slot hashMap =
   let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [APos pos, AType baseType, AGoatType (Array baseType i)]
-stDecl (Decl pos ident (Matrix baseType i j)) hashMap =
+  where symbol = [ASlot slot, APos pos, 
+                  AType baseType, AGoatType (Array baseType i)]
+stDecl (Decl pos ident (Matrix baseType i j)) slot hashMap =
   let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [APos pos, AType baseType, AGoatType (Matrix baseType i j)]
+  where symbol = [ASlot slot, APos pos, 
+                  AType baseType, AGoatType (Matrix baseType i j)]

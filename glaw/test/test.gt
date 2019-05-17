@@ -7,11 +7,10 @@ begin
 end
 
 proc main()
-    int a[2,2];
     float b;
     bool c;
 begin
-    a[1,1] := 1;
-    call p(1,a[0,0]);
+    # a[1,1] := 1;
+    # call p(1,a[0,0]);
     write "Hello, World!\n";
 end
