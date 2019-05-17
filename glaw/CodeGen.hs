@@ -79,16 +79,18 @@ cProc (Procedure pos ident prmts decls stmts) tables =
       do
         str <-
           "\nproc_" ++ ident ++ ":\n"
-          ++ cPushStackFrame table
+          ++ cStackFrame "push_stack_frame" table
           ++ cPrmts prmts table
+          ++ cDecls decls table
           ++ cStmts stmts table
+          ++ cStackFrame "pop_stack_frame" table
           ++ indentation ++ "return"
         return str
     Nothing -> error $ "RuntimeError: Procedure " ++ ident ++ " not found"
 
-cPushStackFrame :: SymTable -> String
-cPushStackFrame (SymTable header prmts hashMap) = 
-  indentation ++ "push_stack_frame " ++ show (stSize hashMap) ++ "\n"
+cStackFrame :: String -> SymTable -> String
+cStackFrame command (SymTable header prmts hashMap) = 
+  indentation ++ command ++ " " ++ show (stSize hashMap) ++ "\n"
 
 cPrmts :: [FormalArgSpec] -> SymTable -> String
 cPrmts [] _ = ""
@@ -100,43 +102,79 @@ cPrmt (FormalArgSpec pos parMode baseType ident)
   (SymTable header prmts hashMap) =
   case baseType of
     BoolType -> 
-      cBoolConst False 
+      cBoolConst False 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = 0
+      where slot = cGetSlot ident hashMap
     IntType -> 
-      cIntConst 0
+      cIntConst 0 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = 0
+      where slot = cGetSlot ident hashMap
     FloatType -> 
-      cFloatConst 0.0
+      cFloatConst 0.0 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = 0
+      where slot = cGetSlot ident hashMap
     StringType -> 
-      cStringConst ""
+      cStringConst "" 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = 0
+      where slot = cGetSlot ident hashMap
 
-cIntConst :: Int -> String
-cIntConst const = 
-  indentation ++ "int_const " ++ "r0, " 
-  ++ show const ++ "\n"
+cDecls :: [Decl] -> SymTable -> String
+cDecls [] _ = ""
+cDecls [decl] table = cDecl decl table
+cDecls (decl:decls) table = cDecl decl table ++ cDecls decls table
 
-cFloatConst :: Float -> String
-cFloatConst const = 
-  indentation ++ "real_const " ++ "r0, " 
-  ++ show const ++ "\n"
+cDecl :: Decl -> SymTable -> String
+cDecl (Decl pos ident (Base baseType)) 
+  (SymTable header prmts hashMap) =
+  case baseType of
+    BoolType -> 
+      cBoolConst False 0
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = cGetSlot ident hashMap
+    IntType -> 
+      cIntConst 0 0
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = cGetSlot ident hashMap
+    FloatType -> 
+      cFloatConst 0.0 0
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = cGetSlot ident hashMap
+    StringType -> 
+      cStringConst "" 0
+      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      where slot = cGetSlot ident hashMap
 
-cStringConst :: String -> String
-cStringConst const = 
-  indentation ++ "string_const " ++ "r0, " 
-  ++ ('\"' : (const ++ "\"")) ++ "\n"
+cGetSlot :: Ident -> HashMap -> Int
+cGetSlot ident hashMap =
+  case stLookupHashMap ident hashMap of
+    Just symbol ->
+      case stASlot symbol of
+        Just (ASlot slot) -> slot
+        Nothing -> error $ "InternalError: No ASlot"
+    Nothing -> error $ "InternalError: cGetSlot " ++ ident
 
-cBoolConst :: Bool -> String
-cBoolConst const = 
-  indentation ++ "bool_const " ++ "r0, " ++
+cIntConst :: Int -> Int -> String
+cIntConst const reg = 
+  indentation ++ "int_const " ++ "r" ++ show reg
+  ++ ", " ++ show const ++ "\n"
+
+cFloatConst :: Float -> Int -> String
+cFloatConst const reg = 
+  indentation ++ "real_const " ++ "r" ++ show reg
+  ++ ", " ++ show const ++ "\n"
+
+cStringConst :: String -> Int -> String
+cStringConst const reg = 
+  indentation ++ "string_const " ++ "r" ++ show reg
+  ++ ", " ++ ('\"' : (const ++ "\"")) ++ "\n"
+
+cBoolConst :: Bool -> Int -> String
+cBoolConst const reg = 
+  indentation ++ "int_const " ++ "r" ++ show reg 
+  ++ ", " ++
   case const of
-    True -> "true"
-    False -> "false"
+    True -> show 1
+    False -> show 0
   ++ "\n"
 
 cStmts :: [Stmt] -> SymTable -> String
@@ -149,14 +187,21 @@ cStmt :: Stmt -> SymTable -> String
 cStmt (Write pos expr) table = 
   do
     str <-
-      (cExpr expr table)
+      (cExpr expr 0 table)
       ++ indentation ++ "call_builtin print_string\n"
     return str
-
-cExpr :: Expr -> SymTable -> String
-cExpr (StrCon pos s) table = 
+cStmt (ProcCall pos ident exprs) table = 
   do
     str <-
-      indentation ++ "string_const "
-      ++ "r0" ++ ", " ++ ('\"' : (s ++ "\"")) ++ "\n"
+      indentation ++ "call "
+      ++ "proc_" ++ ident ++ "\n"
     return str
+
+cExpr :: Expr -> Int -> SymTable -> String
+cExpr (BoolCon pos const) reg table = cBoolConst const reg
+cExpr (IntCon pos const) reg table = cIntConst const reg
+cExpr (FloatCon pos const) reg table = cFloatConst const reg
+cExpr (StrCon pos const) reg table = cStringConst const reg
+-- cExpr (Id pos ident) =
+-- cExpr (ArrayRef pos ident expr) =
+-- cExpr (MatrixRef Pos Ident expr expr) =
