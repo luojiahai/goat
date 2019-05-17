@@ -60,18 +60,19 @@ cProc (Procedure pos ident prmts decls stmts) tables =
       do
         str <-
           "\nproc_" ++ ident ++ ":\n"
-          ++ cStackFrame "push_stack_frame" table
+          ++ cStackFrame "push" table
           ++ cPrmts prmts table
           ++ cDecls decls table
           ++ cStmts stmts table
-          ++ cStackFrame "pop_stack_frame" table
+          ++ cStackFrame "pop" table
           ++ indentation ++ "return"
         return str
     Nothing -> error $ "RuntimeError: Procedure " ++ ident ++ " not found"
 
 cStackFrame :: String -> SymTable -> String
 cStackFrame command (SymTable header prmts hashMap) = 
-  indentation ++ command ++ " " ++ show (stSize hashMap) ++ "\n"
+  indentation ++ command ++ "_stack_frame" ++ " " 
+  ++ show (stSize hashMap) ++ "\n"
 
 cPrmts :: [FormalArgSpec] -> SymTable -> String
 cPrmts [] _ = ""
