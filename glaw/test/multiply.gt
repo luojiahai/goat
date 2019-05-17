@@ -1,0 +1,50 @@
+proc multiply_recurse(val int a, val int b, ref int ret)
+    int c;
+begin
+    if (a = 0 || b = 0) then
+		ret := 0;
+    fi
+	if (b = 1) then
+		ret := a;
+    fi
+	if (a = 1) then
+		ret := b;
+    fi
+    c := 0;
+    call multiply_recurse(a, b - 1, c);
+    ret := a + c;
+end
+
+proc multiply()
+    int a;
+    int b;
+    int abs_b;
+    int ret;
+begin
+    a := 2;
+    b := 3;
+    ret := 0;
+    
+    abs_b := b;
+    if (b < 0) then
+        abs_b := -b;
+    fi
+    call multiply_recurse(a, abs_b, ret);
+
+    if (b < 0) then
+        ret := -ret;
+    fi
+    
+    write a;
+    write " multiply by ";
+    write b;
+    write " is ";
+    write ret;
+    write "\n";
+end
+
+proc main()
+begin
+    write "Hello, this is a multiply without operator and loops.\n";
+    call multiply();
+end

@@ -116,7 +116,7 @@ stPrmt :: FormalArgSpec -> HashMap -> HashMap
 stPrmt (FormalArgSpec pos parMode baseType ident) hashMap = 
   let newHashMap = stBind ident symbol hashMap
   in newHashMap
-  where symbol = [APos pos, AParMode parMode, AType baseType]
+  where symbol = [APos pos, AParMode parMode, AType baseType, AGoatType (Base baseType)]
 
 stDecls :: [Decl] -> HashMap -> HashMap
 stDecls [] hashMap = hashMap
