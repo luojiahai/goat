@@ -18,27 +18,6 @@ import Control.Monad.State
 
 type LabelCounter = Int 
 
--- type Env = String
-
--- data State = State Env LabelCounter
-
--- data CodeGen a = CodeGen (State -> (a, State))
-
--- instance Monad CodeGen where
---   return code =
---     CodeGen (\st -> (code, st))
---   CodeGen gen >>= f =
---     CodeGen (\st0 -> 
---       let
---         (code', st1) = gen st0
---         CodeGen gen' = f code'
---       in gen' st1
---     )
-
--- getState :: CodeGen State
--- getState = 
---   CodeGen (\st -> (st, st))
-
 type CodeGen a = State LabelCounter a
 
 getLabelCounter :: CodeGen LabelCounter
@@ -57,6 +36,8 @@ incLabelCounter =
 indentation = "    "
 startState = 1
 labelCounter = getLabelCounter
+
+-- evalState (incLabelCounter >> labelCounter) startState
 
 codegen :: Program -> [SymTable] -> String
 codegen (Program procs) tables = 
