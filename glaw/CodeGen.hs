@@ -178,32 +178,44 @@ cStmts (stmt:stmts) table =
 
 cStmt :: Stmt -> SymTable -> String
 cStmt (Assign pos lvalue expr) table = 
+  cAssign (Assign pos lvalue expr) table
+cStmt (Read pos lvalue) table = 
+  cRead (Read pos lvalue) table
+cStmt (Write pos expr) table = 
+  cWrite (Write pos expr) table
+cStmt (ProcCall pos ident exprs) table = 
+  cProcCall (ProcCall pos ident exprs) table
+cStmt (If pos expr stmts) table = ""
+cStmt (IfElse pos expr stmts1 stmts2) table = ""
+cStmt (While pos expr stmts) table = ""
+
+cAssign :: Stmt -> SymTable -> String
+cAssign (Assign pos lvalue expr) table =
   if (cGetBaseType (cGetLvalueIdent lvalue) table) 
     == (cGetExprBaseType expr table) then
     cExpr expr 0 table
     ++ (cStore (cGetSlot (cGetLvalueIdent lvalue) table) 0)
   else
     error $ "RuntimeError: Type error when assign"
-cStmt (Read pos lvalue) table = 
-  cRead lvalue table
-cStmt (Write pos expr) table = 
-  cExpr expr 0 table
-  ++ (cCallBuiltin "print_string" table)
-cStmt (ProcCall pos ident exprs) table = 
-  cCallArgs exprs 0 table
-  ++ (cCallProc ident table)
-cStmt (If pos expr stmts) table = ""
-cStmt (IfElse pos expr stmts1 stmts2) table = ""
-cStmt (While pos expr stmts) table = ""
 
-cRead :: Lvalue -> SymTable -> String
-cRead lvalue table = 
+cRead :: Stmt -> SymTable -> String
+cRead (Read pos lvalue) table = 
   case cGetBaseType ident table of
     BoolType -> cCallBuiltin "read_bool" table
     IntType -> cCallBuiltin "read_int" table
     FloatType -> cCallBuiltin "read_real" table
     StringType -> error $ "RuntimeError: Cannot read string"
   where ident = cGetLvalueIdent lvalue
+
+cWrite :: Stmt -> SymTable -> String
+cWrite (Write pos expr) table = 
+  cExpr expr 0 table
+  ++ (cCallBuiltin "print_string" table)
+
+cProcCall :: Stmt -> SymTable -> String
+cProcCall (ProcCall pos ident exprs) table = 
+  cCallArgs exprs 0 table
+  ++ (cCallProc ident table)
 
 cGetLvalueIdent :: Lvalue -> String
 cGetLvalueIdent (LId pos ident) = ident
@@ -243,13 +255,15 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) reg table = ""
 
 cAnd :: Expr -> Int -> SymTable -> String
 cAnd (And pos expr1 expr2) reg table =
-  cExpr expr1 reg table ++ (cExpr expr2 (reg + 1) table)
+  cExpr expr1 reg table
+  ++ (cExpr expr2 (reg + 1) table)
   ++ indentation ++ "and " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
 
 cOr :: Expr -> Int -> SymTable -> String
 cOr (Or pos expr1 expr2) reg table =
-  cExpr expr1 reg table ++ (cExpr expr2 (reg + 1) table)
+  cExpr expr1 reg table
+  ++ (cExpr expr2 (reg + 1) table)
   ++ indentation ++ "or " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
 
@@ -263,7 +277,7 @@ cRel :: Expr -> Int -> SymTable -> String
 cRel (Rel pos relOp expr1 expr2) reg table =
   cExpr expr1 reg table
   ++ (cExpr expr2 (reg + 1) table)
-  -- ++ (cConvertType expr1 expr2 reg table)
+  ++ (cConvertType expr1 expr2 (reg + 1) table)
   ++ indentation ++ "cmp_" ++ op ++ "_" ++ t ++ " "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
@@ -281,9 +295,9 @@ cRel (Rel pos relOp expr1 expr2) reg table =
 
 cBinOpExp :: Expr -> Int -> SymTable -> String
 cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table =
-  cExpr expr1 reg table
+  cCheckTypeNum expr1 table ++ (cExpr expr1 reg table)
   ++ (cExpr expr2 (reg + 1) table)
-  -- ++ (cConvertType expr1 expr2 reg table)
+  ++ (cConvertType expr1 expr2 (reg + 1) table)
   ++ indentation ++ op ++ "_" ++ t ++ " "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
@@ -299,8 +313,7 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table =
 
 cUnaryMinus :: Expr -> Int -> SymTable -> String
 cUnaryMinus (UnaryMinus pos expr) reg table =
-  cExpr expr reg table
-  -- ++ (cConvertType expr1 expr2 reg table)
+  cCheckTypeNum expr table ++ (cExpr expr reg table)
   ++ indentation ++ "neg_" ++ t ++ " "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
@@ -308,6 +321,26 @@ cUnaryMinus (UnaryMinus pos expr) reg table =
     t = case cGetExprBaseType expr table of
           IntType -> "int"
           FloatType -> "real"
+
+cCheckTypeNum :: Expr -> SymTable -> String
+cCheckTypeNum expr table =
+  case cGetExprBaseType expr table of
+    IntType -> ""
+    FloatType -> ""
+    otherwise -> error $ "RuntimeError: Type error"
+  
+cConvertType :: Expr -> Expr -> Int -> SymTable -> String       
+cConvertType expr1 expr2 reg table =
+  case cGetExprBaseType expr1 table of
+    IntType -> ""
+    FloatType -> 
+      case cGetExprBaseType expr2 table of
+        FloatType -> ""
+        IntType ->
+          indentation ++ "int_to_real " 
+          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+        otherwise -> error $ "RuntimeError: Type error"
+    otherwise -> error $ "RuntimeError: Type error"
 
 cExpr :: Expr -> Int -> SymTable -> String
 cExpr (BoolCon pos const) reg table = cBoolConst const reg
@@ -343,24 +376,11 @@ cGetExprBaseType (ArrayRef pos ident expr) table =
   cGetBaseType ident table
 cGetExprBaseType (MatrixRef pos ident expr1 expr2) table = 
   cGetBaseType ident table
-cGetExprBaseType (And pos expr1 expr2) table = 
-  cGetExprBaseType expr1 table
-cGetExprBaseType (Or pos expr1 expr2) table = 
-  cGetExprBaseType expr1 table
-cGetExprBaseType (Not pos expr) table = 
-  cGetExprBaseType expr table
+cGetExprBaseType (And pos expr1 expr2) table = BoolType
+cGetExprBaseType (Or pos expr1 expr2) table = BoolType
+cGetExprBaseType (Not pos expr) table = BoolType
 cGetExprBaseType (Rel pos relOp expr1 expr2) table = BoolType
 cGetExprBaseType (BinOpExp pos binOp expr1 expr2) table = 
   cGetExprBaseType expr1 table
 cGetExprBaseType (UnaryMinus pos expr) table = 
   cGetExprBaseType expr table
-
-cIsExprLeaf :: Expr -> Bool
-cIsExprLeaf expr =
-  case expr of
-    (BoolCon pos const) -> True
-    (IntCon pos const) -> True
-    (FloatCon pos const) -> True
-    (StrCon pos const) -> True
-    (Id pos ident) -> True
-    otherwise -> False
