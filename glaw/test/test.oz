@@ -24,6 +24,8 @@ proc_main:
     store 0, r0
     int_const r0, 0
     store 1, r0
+    int_const r0, 1
+    load r1, 0
     call proc_p
     string_const r0, "Hello, World!\n"
     call_builtin print_string

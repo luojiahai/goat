@@ -80,25 +80,24 @@ cPrmts [prmt] table = cPrmt prmt table
 cPrmts (prmt:prmts) table = cPrmt prmt table ++ cPrmts prmts table
 
 cPrmt :: FormalArgSpec -> SymTable -> String
-cPrmt (FormalArgSpec pos parMode baseType ident) 
-  (SymTable header prmts hashMap) =
+cPrmt (FormalArgSpec pos parMode baseType ident) table =
   case baseType of
     BoolType -> 
       cBoolConst False 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      where slot = cGetSlot ident table
     IntType -> 
       cIntConst 0 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      where slot = cGetSlot ident table
     FloatType -> 
       cFloatConst 0.0 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      where slot = cGetSlot ident table
     StringType -> 
       cStringConst "" 0
       ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      where slot = cGetSlot ident table
 
 cDecls :: [Decl] -> SymTable -> String
 cDecls [] _ = ""
@@ -106,28 +105,31 @@ cDecls [decl] table = cDecl decl table
 cDecls (decl:decls) table = cDecl decl table ++ cDecls decls table
 
 cDecl :: Decl -> SymTable -> String
-cDecl (Decl pos ident (Base baseType)) 
-  (SymTable header prmts hashMap) =
+cDecl (Decl pos ident (Base baseType)) table =
   case baseType of
     BoolType -> 
       cBoolConst False 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      ++ cStore slot 0
+      where slot = cGetSlot ident table
     IntType -> 
       cIntConst 0 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      ++ cStore slot 0
+      where slot = cGetSlot ident table
     FloatType -> 
       cFloatConst 0.0 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      ++ cStore slot 0
+      where slot = cGetSlot ident table
     StringType -> 
       cStringConst "" 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident hashMap
+      ++ cStore slot 0
+      where slot = cGetSlot ident table
+    
+cStore :: Int -> Int -> String
+cStore slot reg = 
+  indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
 
-cGetSlot :: Ident -> HashMap -> Int
-cGetSlot ident hashMap =
+cGetSlot :: Ident -> SymTable -> Int
+cGetSlot ident (SymTable header prmts hashMap) =
   case stLookupHashMap ident hashMap of
     Just symbol ->
       case stASlot symbol of
@@ -166,24 +168,62 @@ cStmts (stmt:stmts) table =
   cStmt stmt table ++ (cStmts stmts table)
 
 cStmt :: Stmt -> SymTable -> String
+cStmt (Assign pos lvalue expr) table = ""
+cStmt (Read pos lvalue) table = ""
 cStmt (Write pos expr) table = 
   do
     str <-
       (cExpr expr 0 table)
-      ++ indentation ++ "call_builtin print_string\n"
+      ++ (cCallBuiltin "print_string" table)
     return str
 cStmt (ProcCall pos ident exprs) table = 
   do
     str <-
-      indentation ++ "call "
-      ++ "proc_" ++ ident ++ "\n"
+      (cCallArgs exprs 0 table)
+      ++ (cCallProc ident table)
     return str
+cStmt (If pos expr stmts) table = ""
+cStmt (IfElse pos expr stmts1 stmts2) table = ""
+cStmt (While pos expr stmts) table = ""
+
+cCallProc :: Ident -> SymTable -> String
+cCallProc ident table = indentation ++ "call proc_" ++ ident ++ "\n"
+
+cCallBuiltin :: Ident -> SymTable -> String
+cCallBuiltin ident table = indentation ++ "call_builtin " ++ ident ++ "\n"
+
+cCallArgs :: [Expr] -> Int -> SymTable -> String
+cCallArgs [] _ _ = ""
+cCallArgs [expr] reg table = cCallArg expr reg table
+cCallArgs (expr:exprs) reg table = 
+  cCallArg expr reg table ++ cCallArgs exprs (reg+1) table
+
+cCallArg :: Expr -> Int -> SymTable -> String
+cCallArg expr reg table = cExpr expr reg table
+
+cId :: Ident -> Int -> SymTable -> String
+cId ident reg table =
+  indentation ++ "load " ++ "r" ++ show reg
+  ++ ", " ++ show slot ++ "\n"
+  where slot = cGetSlot ident table
+
+cArrayRef :: Ident -> Int -> Int -> SymTable -> String
+cArrayRef ident i reg table = ""
+
+cMatrixRef :: Ident -> Int -> Int -> Int -> SymTable -> String
+cMatrixRef ident i j reg table = ""
 
 cExpr :: Expr -> Int -> SymTable -> String
 cExpr (BoolCon pos const) reg table = cBoolConst const reg
 cExpr (IntCon pos const) reg table = cIntConst const reg
 cExpr (FloatCon pos const) reg table = cFloatConst const reg
 cExpr (StrCon pos const) reg table = cStringConst const reg
--- cExpr (Id pos ident) =
--- cExpr (ArrayRef pos ident expr) =
--- cExpr (MatrixRef Pos Ident expr expr) =
+cExpr (Id pos ident) reg table = cId ident reg table
+cExpr (ArrayRef pos ident expr) reg table = ""
+cExpr (MatrixRef pos ident expr1 expr2) reg table = ""
+cExpr (And pos expr1 expr2) reg table = ""
+cExpr (Or pos expr1 expr2) reg table = ""
+cExpr (Not pos expr) reg table = ""
+cExpr (Rel pos relOp expr1 expr2) reg table = ""
+cExpr (BinOpExp pos binOp expr1 expr2) reg table = ""
+cExpr (UnaryMinus pos expr) reg table = ""
