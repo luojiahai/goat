@@ -137,6 +137,15 @@ cGetSlot ident (SymTable header prmts hashMap) =
         Nothing -> error $ "InternalError: No ASlot"
     Nothing -> error $ "InternalError: cGetSlot " ++ ident
 
+cGetBaseType :: Ident -> SymTable -> BaseType
+cGetBaseType ident (SymTable header prmts hashMap) =
+  case stLookupHashMap ident hashMap of
+    Just symbol ->
+      case stAType symbol of
+        Just (AType baseType) -> baseType
+        Nothing -> error $ "InternalError: No AType"
+    Nothing -> error $ "InternalError: cGetBaseType " ++ ident
+
 cIntConst :: Int -> Int -> String
 cIntConst const reg = 
   indentation ++ "int_const " ++ "r" ++ show reg
@@ -169,7 +178,11 @@ cStmts (stmt:stmts) table =
 
 cStmt :: Stmt -> SymTable -> String
 cStmt (Assign pos lvalue expr) table = ""
-cStmt (Read pos lvalue) table = ""
+cStmt (Read pos lvalue) table = 
+  do
+    str <-
+      (cRead lvalue table)
+    return str
 cStmt (Write pos expr) table = 
   do
     str <-
@@ -186,6 +199,25 @@ cStmt (If pos expr stmts) table = ""
 cStmt (IfElse pos expr stmts1 stmts2) table = ""
 cStmt (While pos expr stmts) table = ""
 
+cRead :: Lvalue -> SymTable -> String
+cRead lvalue table = 
+  case cGetBaseType ident table of
+    BoolType -> cCallBuiltin "read_bool" table
+    IntType -> cCallBuiltin "read_int" table
+    FloatType -> cCallBuiltin "read_real" table
+    StringType -> error $ "RuntimeError: Cannot read string"
+  where ident = cGetLvalueIdent lvalue
+
+cGetLvalueIdent :: Lvalue -> String
+cGetLvalueIdent (LId pos ident) = ident
+cGetLvalueIdent (LArrayRef pos ident expr) = ident
+cGetLvalueIdent (LMatrixRef pos ident expr1 expr2) = ident
+
+cLvalue :: Lvalue -> SymTable -> String
+cLvalue (LId pos ident) table = ""
+cLvalue (LArrayRef pos ident expr) table = ""
+cLvalue (LMatrixRef pos ident expr1 expr2) table = ""
+
 cCallProc :: Ident -> SymTable -> String
 cCallProc ident table = indentation ++ "call proc_" ++ ident ++ "\n"
 
@@ -196,22 +228,21 @@ cCallArgs :: [Expr] -> Int -> SymTable -> String
 cCallArgs [] _ _ = ""
 cCallArgs [expr] reg table = cCallArg expr reg table
 cCallArgs (expr:exprs) reg table = 
-  cCallArg expr reg table ++ cCallArgs exprs (reg+1) table
+  cCallArg expr reg table ++ cCallArgs exprs (reg + 1) table
 
 cCallArg :: Expr -> Int -> SymTable -> String
 cCallArg expr reg table = cExpr expr reg table
 
 cId :: Ident -> Int -> SymTable -> String
 cId ident reg table =
-  indentation ++ "load " ++ "r" ++ show reg
-  ++ ", " ++ show slot ++ "\n"
+  indentation ++ "load " ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   where slot = cGetSlot ident table
 
 cArrayRef :: Ident -> Int -> Int -> SymTable -> String
-cArrayRef ident i reg table = ""
+cArrayRef ident iReg reg table = ""
 
 cMatrixRef :: Ident -> Int -> Int -> Int -> SymTable -> String
-cMatrixRef ident i j reg table = ""
+cMatrixRef ident iReg jReg reg table = ""
 
 cExpr :: Expr -> Int -> SymTable -> String
 cExpr (BoolCon pos const) reg table = cBoolConst const reg
