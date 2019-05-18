@@ -139,7 +139,13 @@ stDecls :: [Decl] -> Int -> HashMap -> HashMap
 stDecls [] _ hashMap = hashMap
 stDecls [decl] slot hashMap = stDecl decl slot hashMap
 stDecls (decl:decls) slot hashMap = 
-  (stDecl decl slot . stDecls decls (slot+1)) hashMap
+  (stDecl decl slot . stDecls decls (slot + offset)) hashMap
+  where 
+    offset = 
+      case decl of
+        (Decl pos ident (Base baseType)) -> 1
+        (Decl pos ident (Array baseType i)) -> i
+        (Decl pos ident (Matrix baseType i j)) -> (i * j)
 
 stDecl :: Decl -> Int -> HashMap -> HashMap
 stDecl (Decl pos ident (Base baseType)) slot hashMap =

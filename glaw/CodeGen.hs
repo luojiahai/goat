@@ -106,27 +106,65 @@ cDecls (decl:decls) table = cDecl decl table ++ cDecls decls table
 
 cDecl :: Decl -> SymTable -> String
 cDecl (Decl pos ident (Base baseType)) table =
+  cInitBase (Decl pos ident (Base baseType)) table
+cDecl (Decl pos ident (Array baseType i)) table = 
+  cInitArray (Decl pos ident (Array baseType i)) table
+cDecl (Decl pos ident (Matrix baseType i j)) table = 
+  cInitMatrix (Decl pos ident (Matrix baseType i j)) table
+    
+cInitBase :: Decl -> SymTable -> String
+cInitBase (Decl pos ident (Base baseType)) table =
   case baseType of
     BoolType -> 
       cBoolConst False 0
-      ++ cStore slot 0
+      ++ cStore slot 0 1
       where slot = cGetSlot ident table
     IntType -> 
       cIntConst 0 0
-      ++ cStore slot 0
+      ++ cStore slot 0 1
       where slot = cGetSlot ident table
     FloatType -> 
       cFloatConst 0.0 0
-      ++ cStore slot 0
+      ++ cStore slot 0 1
       where slot = cGetSlot ident table
-    StringType -> 
-      cStringConst "" 0
-      ++ cStore slot 0
+
+cInitArray :: Decl -> SymTable -> String
+cInitArray (Decl pos ident (Array baseType i)) table =
+  case baseType of
+    BoolType -> 
+      cBoolConst False 0
+      ++ cStore slot 0 i
       where slot = cGetSlot ident table
-    
-cStore :: Int -> Int -> String
-cStore slot reg = 
+    IntType -> 
+      cIntConst 0 0
+      ++ cStore slot 0 i
+      where slot = cGetSlot ident table
+    FloatType -> 
+      cFloatConst 0.0 0
+      ++ cStore slot 0 i
+      where slot = cGetSlot ident table
+
+cInitMatrix :: Decl -> SymTable -> String
+cInitMatrix (Decl pos ident (Matrix baseType i j)) table =
+  case baseType of
+    BoolType -> 
+      cBoolConst False 0
+      ++ cStore slot 0 (i * j)
+      where slot = cGetSlot ident table
+    IntType -> 
+      cIntConst 0 0
+      ++ cStore slot 0 (i * j)
+      where slot = cGetSlot ident table
+    FloatType -> 
+      cFloatConst 0.0 0
+      ++ cStore slot 0 (i * j)
+      where slot = cGetSlot ident table
+
+cStore :: Int -> Int -> Int -> String
+cStore slot reg 0 = ""
+cStore slot reg n = 
   indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
+  ++ cStore (slot + 1) reg (n - 1)
 
 cGetSlot :: Ident -> SymTable -> Int
 cGetSlot ident (SymTable header prmts hashMap) =
@@ -191,21 +229,26 @@ cStmt (While pos expr stmts) table = ""
 
 cAssign :: Stmt -> SymTable -> String
 cAssign (Assign pos lvalue expr) table =
-  if (cGetBaseType (cGetLvalueIdent lvalue) table) 
-    == (cGetExprBaseType expr table) then
-    cExpr expr 0 table
-    ++ (cStore (cGetSlot (cGetLvalueIdent lvalue) table) 0)
-  else
-    error $ "RuntimeError: Type error when assign"
+  let ident = cGetLvalueIdent lvalue
+  in 
+    case (cGetBaseType ident table) 
+      == (cGetExprBaseType expr table) of
+      True ->
+        cExpr expr 0 table
+        ++ (cStore (cGetSlot ident table) 0 1)
+      False ->
+        error $ "RuntimeError: Type error when assign"
 
 cRead :: Stmt -> SymTable -> String
 cRead (Read pos lvalue) table = 
-  case cGetBaseType ident table of
-    BoolType -> cCallBuiltin "read_bool" table
-    IntType -> cCallBuiltin "read_int" table
-    FloatType -> cCallBuiltin "read_real" table
-    StringType -> error $ "RuntimeError: Cannot read string"
-  where ident = cGetLvalueIdent lvalue
+  let ident = cGetLvalueIdent lvalue
+  in
+    case cGetBaseType ident table of
+      BoolType -> cCallBuiltin "read_bool" table
+      IntType -> cCallBuiltin "read_int" table
+      FloatType -> cCallBuiltin "read_real" table
+      StringType -> error $ "RuntimeError: Cannot read string"
+    ++ (cStore (cGetSlot ident table) 0 1)
 
 cWrite :: Stmt -> SymTable -> String
 cWrite (Write pos expr) table = 
