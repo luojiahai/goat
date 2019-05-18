@@ -210,10 +210,10 @@ cGetLvalueIdent (LId pos ident) = ident
 cGetLvalueIdent (LArrayRef pos ident expr) = ident
 cGetLvalueIdent (LMatrixRef pos ident expr1 expr2) = ident
 
-cLvalue :: Lvalue -> SymTable -> String
-cLvalue (LId pos ident) table = ""
-cLvalue (LArrayRef pos ident expr) table = ""
-cLvalue (LMatrixRef pos ident expr1 expr2) table = ""
+-- cLvalue :: Lvalue -> SymTable -> String
+-- cLvalue (LId pos ident) table = ""
+-- cLvalue (LArrayRef pos ident expr) table = ""
+-- cLvalue (LMatrixRef pos ident expr1 expr2) table = ""
 
 cCallProc :: Ident -> SymTable -> String
 cCallProc ident table = indentation ++ "call proc_" ++ ident ++ "\n"
@@ -279,6 +279,36 @@ cRel (Rel pos relOp expr1 expr2) reg table =
           IntType -> "int"
           FloatType -> "real"
 
+cBinOpExp :: Expr -> Int -> SymTable -> String
+cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table =
+  cExpr expr1 reg table
+  ++ (cExpr expr2 (reg + 1) table)
+  -- ++ (cConvertType expr1 expr2 reg table)
+  ++ indentation ++ op ++ "_" ++ t ++ " "
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
+  ++ "r" ++ show (reg + 1) ++ "\n"
+  where 
+    op = case binOp of
+           Op_add -> "add"
+           Op_sub -> "sub"
+           Op_mul -> "mul"
+           Op_div -> "div"
+    t = case cGetExprBaseType expr1 table of
+          IntType -> "int"
+          FloatType -> "real"
+
+cUnaryMinus :: Expr -> Int -> SymTable -> String
+cUnaryMinus (UnaryMinus pos expr) reg table =
+  cExpr expr reg table
+  -- ++ (cConvertType expr1 expr2 reg table)
+  ++ indentation ++ "neg_" ++ t ++ " "
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
+  ++ "r" ++ show (reg + 1) ++ "\n"
+  where 
+    t = case cGetExprBaseType expr table of
+          IntType -> "int"
+          FloatType -> "real"
+
 cExpr :: Expr -> Int -> SymTable -> String
 cExpr (BoolCon pos const) reg table = cBoolConst const reg
 cExpr (IntCon pos const) reg table = cIntConst const reg
@@ -297,8 +327,10 @@ cExpr (Not pos expr) reg table =
   cNot (Not pos expr) reg table
 cExpr (Rel pos relOp expr1 expr2) reg table = 
   cRel (Rel pos relOp expr1 expr2) reg table
-cExpr (BinOpExp pos binOp expr1 expr2) reg table = ""
-cExpr (UnaryMinus pos expr) reg table = ""
+cExpr (BinOpExp pos binOp expr1 expr2) reg table = 
+  cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table
+cExpr (UnaryMinus pos expr) reg table = 
+  cUnaryMinus (UnaryMinus pos expr) reg table
 
 cGetExprBaseType :: Expr -> SymTable -> BaseType
 cGetExprBaseType (BoolCon pos const) table = BoolType
@@ -312,24 +344,16 @@ cGetExprBaseType (ArrayRef pos ident expr) table =
 cGetExprBaseType (MatrixRef pos ident expr1 expr2) table = 
   cGetBaseType ident table
 cGetExprBaseType (And pos expr1 expr2) table = 
-  if (cGetExprBaseType expr1 table == BoolType) 
-    && (cGetExprBaseType expr2 table == BoolType) then
-    BoolType
-  else error $ "RuntimeError: Type error when &&"
+  cGetExprBaseType expr1 table
 cGetExprBaseType (Or pos expr1 expr2) table = 
-  if (cGetExprBaseType expr1 table == BoolType) 
-    && (cGetExprBaseType expr2 table == BoolType) then
-    BoolType
-  else error $ "RuntimeError: Type error when ||"
+  cGetExprBaseType expr1 table
 cGetExprBaseType (Not pos expr) table = 
-  if (cGetExprBaseType expr table == BoolType) then
-    BoolType
-  else error $ "RuntimeError: Type error when !"
+  cGetExprBaseType expr table
 cGetExprBaseType (Rel pos relOp expr1 expr2) table = BoolType
 cGetExprBaseType (BinOpExp pos binOp expr1 expr2) table = 
-  error $ "RuntimeError: Type error when binop"
+  cGetExprBaseType expr1 table
 cGetExprBaseType (UnaryMinus pos expr) table = 
-  error $ "RuntimeError: Type error when unaryminus"
+  cGetExprBaseType expr table
 
 cIsExprLeaf :: Expr -> Bool
 cIsExprLeaf expr =
