@@ -177,24 +177,21 @@ cStmts (stmt:stmts) table =
   cStmt stmt table ++ (cStmts stmts table)
 
 cStmt :: Stmt -> SymTable -> String
-cStmt (Assign pos lvalue expr) table = ""
+cStmt (Assign pos lvalue expr) table = 
+  if (cGetBaseType (cGetLvalueIdent lvalue) table) 
+    == (cGetExprBaseType expr table) then
+    cExpr expr 0 table
+    ++ (cStore (cGetSlot (cGetLvalueIdent lvalue) table) 0)
+  else
+    error $ "RuntimeError: Type error when assign"
 cStmt (Read pos lvalue) table = 
-  do
-    str <-
-      (cRead lvalue table)
-    return str
+  cRead lvalue table
 cStmt (Write pos expr) table = 
-  do
-    str <-
-      (cExpr expr 0 table)
-      ++ (cCallBuiltin "print_string" table)
-    return str
+  cExpr expr 0 table
+  ++ (cCallBuiltin "print_string" table)
 cStmt (ProcCall pos ident exprs) table = 
-  do
-    str <-
-      (cCallArgs exprs 0 table)
-      ++ (cCallProc ident table)
-    return str
+  cCallArgs exprs 0 table
+  ++ (cCallProc ident table)
 cStmt (If pos expr stmts) table = ""
 cStmt (IfElse pos expr stmts1 stmts2) table = ""
 cStmt (While pos expr stmts) table = ""
@@ -233,28 +230,113 @@ cCallArgs (expr:exprs) reg table =
 cCallArg :: Expr -> Int -> SymTable -> String
 cCallArg expr reg table = cExpr expr reg table
 
-cId :: Ident -> Int -> SymTable -> String
-cId ident reg table =
+cId :: Expr -> Int -> SymTable -> String
+cId (Id pos ident) reg table =
   indentation ++ "load " ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   where slot = cGetSlot ident table
 
-cArrayRef :: Ident -> Int -> Int -> SymTable -> String
-cArrayRef ident iReg reg table = ""
+cArrayRef :: Expr -> Int -> SymTable -> String
+cArrayRef (ArrayRef pos ident expr) reg table = ""
 
-cMatrixRef :: Ident -> Int -> Int -> Int -> SymTable -> String
-cMatrixRef ident iReg jReg reg table = ""
+cMatrixRef :: Expr -> Int -> SymTable -> String
+cMatrixRef (MatrixRef pos ident expr1 expr2) reg table = ""
+
+cAnd :: Expr -> Int -> SymTable -> String
+cAnd (And pos expr1 expr2) reg table =
+  cExpr expr1 reg table ++ (cExpr expr2 (reg + 1) table)
+  ++ indentation ++ "and " ++ "r" ++ show reg ++ ", " 
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
+
+cOr :: Expr -> Int -> SymTable -> String
+cOr (Or pos expr1 expr2) reg table =
+  cExpr expr1 reg table ++ (cExpr expr2 (reg + 1) table)
+  ++ indentation ++ "or " ++ "r" ++ show reg ++ ", " 
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
+
+cNot :: Expr -> Int -> SymTable -> String
+cNot (Not pos expr) reg table =
+  cExpr expr reg table
+  ++ indentation ++ "not " ++ "r" ++ show reg ++ ", " 
+  ++ "r" ++ show reg ++ "\n"
+
+cRel :: Expr -> Int -> SymTable -> String
+cRel (Rel pos relOp expr1 expr2) reg table =
+  cExpr expr1 reg table
+  ++ (cExpr expr2 (reg + 1) table)
+  -- ++ (cConvertType expr1 expr2 reg table)
+  ++ indentation ++ "cmp_" ++ op ++ "_" ++ t ++ " "
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
+  ++ "r" ++ show (reg + 1) ++ "\n"
+  where 
+    op = case relOp of
+           Op_eq -> "eq"
+           Op_ne -> "ne"
+           Op_ge -> "ge"
+           Op_le -> "le"
+           Op_gt -> "gt"
+           Op_lt -> "lt"
+    t = case cGetExprBaseType expr1 table of
+          IntType -> "int"
+          FloatType -> "real"
 
 cExpr :: Expr -> Int -> SymTable -> String
 cExpr (BoolCon pos const) reg table = cBoolConst const reg
 cExpr (IntCon pos const) reg table = cIntConst const reg
 cExpr (FloatCon pos const) reg table = cFloatConst const reg
 cExpr (StrCon pos const) reg table = cStringConst const reg
-cExpr (Id pos ident) reg table = cId ident reg table
-cExpr (ArrayRef pos ident expr) reg table = ""
-cExpr (MatrixRef pos ident expr1 expr2) reg table = ""
-cExpr (And pos expr1 expr2) reg table = ""
-cExpr (Or pos expr1 expr2) reg table = ""
-cExpr (Not pos expr) reg table = ""
-cExpr (Rel pos relOp expr1 expr2) reg table = ""
+cExpr (Id pos ident) reg table = cId (Id pos ident) reg table
+cExpr (ArrayRef pos ident expr) reg table = 
+  cArrayRef (ArrayRef pos ident expr) reg table 
+cExpr (MatrixRef pos ident expr1 expr2) reg table =
+  cMatrixRef (MatrixRef pos ident expr1 expr2) reg table
+cExpr (And pos expr1 expr2) reg table = 
+  cAnd (And pos expr1 expr2) reg table
+cExpr (Or pos expr1 expr2) reg table = 
+  cOr (Or pos expr1 expr2) reg table
+cExpr (Not pos expr) reg table = 
+  cNot (Not pos expr) reg table
+cExpr (Rel pos relOp expr1 expr2) reg table = 
+  cRel (Rel pos relOp expr1 expr2) reg table
 cExpr (BinOpExp pos binOp expr1 expr2) reg table = ""
 cExpr (UnaryMinus pos expr) reg table = ""
+
+cGetExprBaseType :: Expr -> SymTable -> BaseType
+cGetExprBaseType (BoolCon pos const) table = BoolType
+cGetExprBaseType (IntCon pos const) table = IntType
+cGetExprBaseType (FloatCon pos const) table = FloatType
+cGetExprBaseType (StrCon pos const) table = StringType
+cGetExprBaseType (Id pos ident) table = 
+  cGetBaseType ident table
+cGetExprBaseType (ArrayRef pos ident expr) table = 
+  cGetBaseType ident table
+cGetExprBaseType (MatrixRef pos ident expr1 expr2) table = 
+  cGetBaseType ident table
+cGetExprBaseType (And pos expr1 expr2) table = 
+  if (cGetExprBaseType expr1 table == BoolType) 
+    && (cGetExprBaseType expr2 table == BoolType) then
+    BoolType
+  else error $ "RuntimeError: Type error when &&"
+cGetExprBaseType (Or pos expr1 expr2) table = 
+  if (cGetExprBaseType expr1 table == BoolType) 
+    && (cGetExprBaseType expr2 table == BoolType) then
+    BoolType
+  else error $ "RuntimeError: Type error when ||"
+cGetExprBaseType (Not pos expr) table = 
+  if (cGetExprBaseType expr table == BoolType) then
+    BoolType
+  else error $ "RuntimeError: Type error when !"
+cGetExprBaseType (Rel pos relOp expr1 expr2) table = BoolType
+cGetExprBaseType (BinOpExp pos binOp expr1 expr2) table = 
+  error $ "RuntimeError: Type error when binop"
+cGetExprBaseType (UnaryMinus pos expr) table = 
+  error $ "RuntimeError: Type error when unaryminus"
+
+cIsExprLeaf :: Expr -> Bool
+cIsExprLeaf expr =
+  case expr of
+    (BoolCon pos const) -> True
+    (IntCon pos const) -> True
+    (FloatCon pos const) -> True
+    (StrCon pos const) -> True
+    (Id pos ident) -> True
+    otherwise -> False
