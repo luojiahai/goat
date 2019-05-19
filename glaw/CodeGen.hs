@@ -243,7 +243,14 @@ cRead (Read pos lvalue) table =
 cWrite :: Stmt -> SymTable -> String
 cWrite (Write pos expr) table = 
   cExpr expr 0 table
-  ++ (cCallBuiltin "print_string" table)
+  ++ (cCallBuiltin ("print_" ++ t) table)
+  where 
+    t =
+      case cGetExprBaseType expr table of
+        IntType -> "int"
+        FloatType -> "real"
+        BoolType -> "bool"
+        StringType -> "string"
 
 cProcCall :: Stmt -> SymTable -> String
 cProcCall (ProcCall pos ident exprs) table = 
@@ -271,7 +278,15 @@ cIfElse (IfElse pos expr stmts1 stmts2) table =
   ++ "label_" ++ show 2 ++ ":\n"
 
 cWhile :: Stmt -> SymTable -> String
-cWhile (While pos expr stmts) table = ""
+cWhile (While pos expr stmts) table = 
+  "label_" ++ show 0 ++ ":\n"
+  ++ (cExpr expr 1 table)
+  ++ indentation ++ "branch_on_true "
+  ++ "r" ++ show 1 ++ ", " ++ "label_" ++ show 1 ++ "\n"
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show 2 ++ "\n"
+  ++ "label_" ++ show 1 ++ ":\n" ++ (cStmts stmts table)
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show 0 ++ "\n"
+  ++ "label_" ++ show 2 ++ ":\n"
 
 cGetLvalueIdent :: Lvalue -> String
 cGetLvalueIdent (LId pos ident) = ident
@@ -388,16 +403,20 @@ cRel (Rel pos relOp expr1 expr2) reg table =
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
   where 
-    op = case relOp of
-           Op_eq -> "eq"
-           Op_ne -> "ne"
-           Op_ge -> "ge"
-           Op_le -> "le"
-           Op_gt -> "gt"
-           Op_lt -> "lt"
-    t = case cGetExprBaseType expr1 table of
-          IntType -> "int"
-          FloatType -> "real"
+    op = 
+      case relOp of
+        Op_eq -> "eq"
+        Op_ne -> "ne"
+        Op_ge -> "ge"
+        Op_le -> "le"
+        Op_gt -> "gt"
+        Op_lt -> "lt"
+    t = 
+      case cGetExprBaseType expr1 table of
+        IntType -> "int"
+        FloatType -> "real"
+        BoolType -> error $ "RuntimeError: Cannot compare bool"
+        StringType -> error $ "RuntimeError: Cannot compare string"
 
 cBinOpExp :: Expr -> Int -> SymTable -> String
 cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table =
@@ -408,14 +427,18 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table =
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
   where 
-    op = case binOp of
-           Op_add -> "add"
-           Op_sub -> "sub"
-           Op_mul -> "mul"
-           Op_div -> "div"
-    t = case cGetExprBaseType expr1 table of
-          IntType -> "int"
-          FloatType -> "real"
+    op = 
+      case binOp of
+        Op_add -> "add"
+        Op_sub -> "sub"
+        Op_mul -> "mul"
+        Op_div -> "div"
+    t = 
+      case cGetExprBaseType expr1 table of
+        IntType -> "int"
+        FloatType -> "real"
+        BoolType -> error $ "RuntimeError: Cannot evaluate bool"
+        StringType -> error $ "RuntimeError: Cannot evaluate string"
 
 cUnaryMinus :: Expr -> Int -> SymTable -> String
 cUnaryMinus (UnaryMinus pos expr) reg table =
@@ -424,9 +447,12 @@ cUnaryMinus (UnaryMinus pos expr) reg table =
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
   where 
-    t = case cGetExprBaseType expr table of
-          IntType -> "int"
-          FloatType -> "real"
+    t = 
+      case cGetExprBaseType expr table of
+        IntType -> "int"
+        FloatType -> "real"
+        BoolType -> error $ "RuntimeError: Cannot unary minus bool"
+        StringType -> error $ "RuntimeError: Cannot unary minus string"
 
 cCheckTypeNum :: Expr -> SymTable -> String
 cCheckTypeNum expr table =

@@ -6,28 +6,12 @@ proc_p:
     store 1, r1
     int_const r0, 0
     store 2, r0
-    load r0, 0
-    int_const r1, 1
-    cmp_eq_int r0, r0, r1
-    branch_on_true r0, label_0
-    branch_on_false r0, label_1
-label_0:
-    string_const r0, "KK"
-    call_builtin print_string
-    string_const r0, "\n"
-    call_builtin print_string
-
-label_1:
-    string_const r0, "NOTKK"
-    call_builtin print_string
-    string_const r0, "\n"
-    call_builtin print_string
-
-label_2:
+    load r0, 2
+    call_builtin print_int
     pop_stack_frame 3
     return
 proc_main:
-    push_stack_frame 17
+    push_stack_frame 18
     int_const r0, 0
     store 0, r0
     store 1, r0
@@ -47,6 +31,8 @@ proc_main:
     store 15, r0
     int_const r0, 0
     store 16, r0
+    int_const r0, 0
+    store 17, r0
     int_const r0, 19
     int_const r2, 3
     int_const r3, 2
@@ -57,9 +43,23 @@ proc_main:
     sub_offset r1, r1, r2
     store_indirect r1, r0
     int_const r0, 0
-    store 16, r0
-    int_const r0, 10
-    int_const r1, 2
-    call proc_p
-    pop_stack_frame 17
+    store 17, r0
+label_0:
+    load r1, 17
+    int_const r2, 5
+    cmp_lt_int r1, r1, r2
+    branch_on_true r1, label_1
+    branch_uncond label_2
+label_1:
+    load r0, 17
+    call_builtin print_int
+    string_const r0, "\n"
+    call_builtin print_string
+    load r0, 17
+    int_const r1, 1
+    add_int r0, r0, r1
+    store 17, r0
+    branch_uncond label_0
+label_2:
+    pop_stack_frame 18
     return

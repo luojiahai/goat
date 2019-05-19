@@ -1,20 +1,26 @@
 proc p(val int x, ref float y)
     int d;
 begin
-    if (x = 1) then
-        write "KK";
-        write "\n";
-    else
-        write "NOTKK";
-        write "\n";
-    fi
+    write d;
+    #if (x = 1) then
+    #    write "KK";
+    #    write "\n";
+    #else
+    #    write "NOTKK";
+    #    write "\n";
+    #fi
 end
 
 proc main()
     int a[4,4];
     bool b;
+    int c;
 begin
     a[3,2] := 19;
-    b := false;
-    call p(10,2);
+    c := 0;
+    while (c < 5) do
+        write c;
+        write "\n";
+        c := c + 1;
+    od
 end
