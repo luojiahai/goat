@@ -16,37 +16,30 @@ import GoatAST
 import SymTable
 import Control.Monad.State
 
-type LabelCounter = Int 
+-- type LabelCounter = Int 
 
-type CodeGen a = State LabelCounter a
+-- type CodeGen a = State LabelCounter a
 
-getLabelCounter :: CodeGen LabelCounter
-getLabelCounter =
-  do 
-    label <- get
-    return label
+-- getLabelCounter :: CodeGen LabelCounter
+-- getLabelCounter =
+--   do 
+--     label <- get
+--     return label
 
-incLabelCounter :: CodeGen ()
-incLabelCounter =
-  do
-    label <- get
-    put (label + 1)
-    return ()
+-- incLabelCounter :: CodeGen ()
+-- incLabelCounter =
+--   do
+--     label <- get
+--     put (label + 1)
+--     return ()
 
 indentation = "    "
 
-labelCounter = getLabelCounter
-
--- evalState (incLabelCounter >> labelCounter) startState
-
 codegen :: Program -> [SymTable] -> String
 codegen (Program procs) tables = 
-  do
-    str <- 
-      indentation ++ "call proc_main\n"
-      ++ indentation ++ "halt"
-      ++ (cProcs procs tables)
-    return str
+  indentation ++ "call proc_main\n"
+  ++ indentation ++ "halt"
+  ++ (cProcs procs tables)
 
 cProcs :: [Procedure] -> [SymTable] -> String
 cProcs [] _ = ""
@@ -57,16 +50,13 @@ cProc :: Procedure -> [SymTable] -> String
 cProc (Procedure pos ident prmts decls stmts) tables = 
   case stLookupSymTable ident tables of
     Just table ->
-      do
-        str <-
-          "\nproc_" ++ ident ++ ":\n"
-          ++ cStackFrame "push" table
-          ++ cPrmts prmts table
-          ++ cDecls decls table
-          ++ cStmts stmts table
-          ++ cStackFrame "pop" table
-          ++ indentation ++ "return"
-        return str
+      "\nproc_" ++ ident ++ ":\n"
+      ++ cStackFrame "push" table
+      ++ cPrmts prmts table
+      ++ cDecls decls table
+      ++ cStmts stmts table
+      ++ cStackFrame "pop" table
+      ++ indentation ++ "return"
     Nothing -> error $ "RuntimeError: Procedure " ++ ident ++ " not found"
 
 cStackFrame :: String -> SymTable -> String
@@ -267,7 +257,11 @@ cProcCall (ProcCall pos ident exprs) table =
   ++ indentation ++ "call proc_" ++ ident ++ "\n"
 
 cIf :: Stmt -> SymTable -> String
-cIf (If pos expr stmts) table = ""
+cIf (If pos expr stmts) table = 
+  cExpr expr 0 table
+  ++ indentation ++ "branch_on_true "
+  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 0 ++ "\n"
+  ++ indentation ++ "branch_uncod " ++ "label_" ++ show 1 ++ "\n"
 
 cIfElse :: Stmt -> SymTable -> String
 cIfElse (IfElse pos expr stmts1 stmts2) table = ""
