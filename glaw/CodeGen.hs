@@ -344,10 +344,6 @@ cProcArg expr i reg table =
         Val -> 
           case stAType symbol of
             Just (AType baseType) ->
-              -- case baseType of
-              --   IntType ->
-              --   FloatType ->
-              --   otherwise -> error $ "InternalError: cProcArg"
               if (cGetExprBaseType expr table) == baseType 
               then cExpr expr reg table
               else error $ "InternalError: cProcArg"
