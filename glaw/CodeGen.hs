@@ -156,7 +156,7 @@ cGetSlot ident (SymTable header prmts hashMap) =
     Just symbol ->
       case stASlot symbol of
         Just (ASlot slot) -> slot
-        Nothing -> error $ "InternalError: No ASlot"
+        Nothing -> error $ "InternalError: cGetSlot"
     Nothing -> error $ "InternalError: cGetSlot " ++ ident
 
 cGetBaseType :: Ident -> SymTable -> BaseType
@@ -165,7 +165,7 @@ cGetBaseType ident (SymTable header prmts hashMap) =
     Just symbol ->
       case stAType symbol of
         Just (AType baseType) -> baseType
-        Nothing -> error $ "InternalError: No AType"
+        Nothing -> error $ "InternalError: cGetBaseType"
     Nothing -> error $ "InternalError: cGetBaseType " ++ ident
 
 cGetGoatType :: Ident -> SymTable -> GoatType
@@ -174,7 +174,7 @@ cGetGoatType ident (SymTable header prmts hashMap) =
     Just symbol ->
       case stAGoatType symbol of
         Just (AGoatType goatType) -> goatType
-        Nothing -> error $ "InternalError: No AGoatType"
+        Nothing -> error $ "InternalError: cGetGoatType"
     Nothing -> error $ "InternalError: cGetGoatType " ++ ident
 
 cIntConst :: Int -> Int -> String
@@ -254,7 +254,7 @@ cWrite (Write pos expr) table =
 
 cProcCall :: Stmt -> SymTable -> String
 cProcCall (ProcCall pos ident exprs) table = 
-  cExprs exprs 0 table
+  cProcArgs exprs 0 0 table
   ++ indentation ++ "call proc_" ++ ident ++ "\n"
 
 cIf :: Stmt -> SymTable -> String
@@ -325,16 +325,42 @@ cLvalue (LMatrixRef pos ident expr1 expr2) reg table =
     len = 
       case cGetGoatType ident table of
         (Matrix baseType i j) -> i
-        otherwise -> error $ "InternalError: Not MatrixRef"
+        otherwise -> error $ "InternalError: cLvalue"
 
 cCallBuiltin :: Ident -> SymTable -> String
 cCallBuiltin ident table = indentation ++ "call_builtin " ++ ident ++ "\n"
 
-cExprs :: [Expr] -> Int -> SymTable -> String
-cExprs [] _ _ = ""
-cExprs [expr] reg table = cExpr expr reg table
-cExprs (expr:exprs) reg table = 
-  cExpr expr reg table ++ cExprs exprs (reg + 1) table
+cProcArgs :: [Expr] -> Int -> Int -> SymTable -> String
+cProcArgs [] _ _ _ = ""
+cProcArgs [expr] i reg table = cProcArg expr i reg table
+cProcArgs (expr:exprs) i reg table = 
+  cProcArg expr i reg table ++ cProcArgs exprs i (reg + 1) table
+
+cProcArg :: Expr -> Int -> Int -> SymTable -> String
+cProcArg expr i reg table = 
+  case stAParMode symbol of
+    Just (AParMode parMode) ->
+      case parMode of
+        Val -> 
+          case stAType symbol of
+            Just (AType baseType) ->
+              -- case baseType of
+              --   IntType ->
+              --   FloatType ->
+              --   otherwise -> error $ "InternalError: cProcArg"
+              if (cGetExprBaseType expr table) == baseType 
+              then cExpr expr reg table
+              else error $ "InternalError: cProcArg"
+            Nothing -> error $ "InternalError: cProcArg"
+        Ref -> 
+          case stAType symbol of
+            Just (AType baseType) ->
+              if (cGetExprBaseType expr table) == baseType 
+              then cExpr expr reg table
+              else error $ "InternalError: cProcArg"
+            Nothing -> error $ "InternalError: cProcArg"
+    Nothing -> error $ "InternalError: cProcArg"
+  where symbol = stGetArgSymbol i table
 
 cId :: Expr -> Int -> SymTable -> String
 cId (Id pos ident) reg table =
@@ -372,7 +398,7 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) reg table =
     len = 
       case cGetGoatType ident table of
         (Matrix baseType i j) -> i
-        otherwise -> error $ "InternalError: Not MatrixRef"
+        otherwise -> error $ "InternalError: cMatrixRef"
 
 cAnd :: Expr -> Int -> SymTable -> String
 cAnd (And pos expr1 expr2) reg table =
@@ -398,7 +424,7 @@ cRel :: Expr -> Int -> SymTable -> String
 cRel (Rel pos relOp expr1 expr2) reg table =
   cExpr expr1 reg table
   ++ (cExpr expr2 (reg + 1) table)
-  ++ (cConvertType expr1 expr2 (reg + 1) table)
+  ++ (cConvertType expr1 expr2 reg table)
   ++ indentation ++ "cmp_" ++ op ++ "_" ++ t ++ " "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
@@ -422,7 +448,7 @@ cBinOpExp :: Expr -> Int -> SymTable -> String
 cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table =
   cCheckTypeNum expr1 table ++ (cExpr expr1 reg table)
   ++ (cExpr expr2 (reg + 1) table)
-  ++ (cConvertType expr1 expr2 (reg + 1) table)
+  ++ (cConvertType expr1 expr2 reg table)
   ++ indentation ++ op ++ "_" ++ t ++ " "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show (reg + 1) ++ "\n"
@@ -466,7 +492,9 @@ cConvertType expr1 expr2 reg table =
   case cGetExprBaseType expr1 table of
     IntType -> 
       case cGetExprBaseType expr2 table of
-        FloatType -> error $ "RuntimeError: Type error"
+        FloatType -> 
+          indentation ++ "int_to_real " 
+          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
         IntType -> ""
         otherwise -> error $ "RuntimeError: Type error"
     FloatType -> 
@@ -474,7 +502,7 @@ cConvertType expr1 expr2 reg table =
         FloatType -> ""
         IntType ->
           indentation ++ "int_to_real " 
-          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+          ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
         otherwise -> error $ "RuntimeError: Type error"
     otherwise -> error $ "RuntimeError: Type error"
 

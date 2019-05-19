@@ -26,7 +26,7 @@ data SymTable = SymTable Header [FormalArgSpec] HashMap
   deriving (Show, Eq)
 
 data Attribute = 
-  ASlot Int | APos Pos | AParMode ParMode 
+  ASlot Int | APos Pos | AParMode ParMode | AArgIndex Int
   | AType BaseType | AValue Expr | AGoatType GoatType
   deriving (Show, Eq)
 
@@ -102,6 +102,45 @@ stAGoatType (attr:attrs) =
     (AGoatType goatType) -> Just (AGoatType goatType)
     otherwise -> stAGoatType attrs
 
+stAParMode :: Symbol -> Maybe Attribute
+stAParMode [] = Nothing
+stAParMode [attr] = 
+  case attr of
+    (AParMode parMode) -> Just (AParMode parMode)
+    otherwise -> Nothing
+stAParMode (attr:attrs) = 
+  case attr of
+    (AParMode parMode) -> Just (AParMode parMode)
+    otherwise -> stAParMode attrs
+
+stAArgIndex :: Symbol -> Maybe Attribute
+stAArgIndex [] = Nothing
+stAArgIndex [attr] = 
+  case attr of
+    (AArgIndex argIndex) -> Just (AArgIndex argIndex)
+    otherwise -> Nothing
+stAArgIndex (attr:attrs) = 
+  case attr of
+    (AArgIndex argIndex) -> Just (AArgIndex argIndex)
+    otherwise -> stAArgIndex attrs
+
+stGetArgSymbol :: Int -> SymTable -> Symbol
+stGetArgSymbol i (SymTable header prmts hashMap) =
+  stGetArgSymbol' i (Data.Map.toList hashMap)
+
+stGetArgSymbol' :: Int -> [(String, Symbol)] -> Symbol
+stGetArgSymbol' i [] = error $ "InternalError: Arg not found"
+stGetArgSymbol' i [(k, symbol)] =
+  case stAArgIndex symbol of
+    Just (AArgIndex argIndex) -> 
+      if argIndex == i then symbol else error $ "InternalError: Arg not found"
+    Nothing -> error $ "InternalError: Arg not found"
+stGetArgSymbol' i ((k, symbol):pairs) =
+  case stAArgIndex symbol of
+    Just (AArgIndex argIndex) -> 
+      if argIndex == i then symbol else stGetArgSymbol' i pairs
+    Nothing -> stGetArgSymbol' i pairs
+
 stBind :: String -> Symbol -> HashMap -> HashMap
 stBind key value hashMap =
   case Data.Map.lookup key hashMap of 
@@ -127,23 +166,23 @@ stProcs (proc:procs) = stProc proc : (stProcs procs)
 
 stProc :: Procedure -> SymTable
 stProc (Procedure pos ident prmts decls stmts) = 
-  let hashMap = (stPrmts prmts 0 . stDecls decls (length prmts)) emptyHashMap
+  let hashMap = (stPrmts prmts 0 0 . stDecls decls (length prmts)) emptyHashMap
   in SymTable ident prmts hashMap
   where emptyHashMap = Data.Map.fromList([])
 
-stPrmts :: [FormalArgSpec] -> Int -> HashMap -> HashMap
-stPrmts [] _ hashMap = hashMap
-stPrmts [prmt] slot hashMap = stPrmt prmt slot hashMap
-stPrmts (prmt:prmts) slot hashMap = 
-  (stPrmt prmt slot . stPrmts prmts (slot+1)) hashMap
+stPrmts :: [FormalArgSpec] -> Int -> Int -> HashMap -> HashMap
+stPrmts [] _ _ hashMap = hashMap
+stPrmts [prmt] i slot hashMap = stPrmt prmt i slot hashMap
+stPrmts (prmt:prmts) i slot hashMap = 
+  (stPrmt prmt i slot . stPrmts prmts (i + 1) (slot + 1)) hashMap
 
-stPrmt :: FormalArgSpec -> Int -> HashMap -> HashMap
-stPrmt (FormalArgSpec pos parMode baseType ident) slot hashMap = 
+stPrmt :: FormalArgSpec -> Int -> Int -> HashMap -> HashMap
+stPrmt (FormalArgSpec pos parMode baseType ident) i slot hashMap = 
   let newHashMap = stBind ident symbol hashMap
   in newHashMap
   where symbol = [ASlot slot, APos pos, 
-                  AParMode parMode, AType baseType, 
-                  AGoatType (Base baseType)]
+                  AParMode parMode, AArgIndex i,
+                  AType baseType, AGoatType (Base baseType)]
 
 stDecls :: [Decl] -> Int -> HashMap -> HashMap
 stDecls [] _ hashMap = hashMap
