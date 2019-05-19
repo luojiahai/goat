@@ -34,8 +34,18 @@ data Attribute =
 symTable :: [Procedure] -> [SymTable]
 symTable procs = stProcs procs
 
-stSize :: HashMap -> Int
-stSize = Data.Map.size
+stHashMapSize :: HashMap -> Int
+stHashMapSize hashMap = 
+  let f symbol len = len + (stSymbolSize symbol)
+  in foldr f 0 hashMap
+
+stSymbolSize :: Symbol -> Int
+stSymbolSize symbol = 
+  case stAGoatType symbol of
+    Just (AGoatType (Base baseType)) -> 1
+    Just (AGoatType (Array baseType i)) -> i
+    Just (AGoatType (Matrix baseType i j)) -> i * j
+    Nothing -> error $ "InternalError: No AGoatType"
 
 stDuplicate :: [SymTable] -> [SymTable] -> Bool
 stDuplicate seen [] = False

@@ -34,7 +34,7 @@ incLabelCounter =
     return ()
 
 indentation = "    "
-startState = 1
+
 labelCounter = getLabelCounter
 
 -- evalState (incLabelCounter >> labelCounter) startState
@@ -72,7 +72,7 @@ cProc (Procedure pos ident prmts decls stmts) tables =
 cStackFrame :: String -> SymTable -> String
 cStackFrame command (SymTable header prmts hashMap) = 
   indentation ++ command ++ "_stack_frame" ++ " " 
-  ++ show (stSize hashMap) ++ "\n"
+  ++ show (stHashMapSize hashMap) ++ "\n"
 
 cPrmts :: [FormalArgSpec] -> SymTable -> String
 cPrmts [] _ = ""
@@ -263,7 +263,7 @@ cWrite (Write pos expr) table =
 
 cProcCall :: Stmt -> SymTable -> String
 cProcCall (ProcCall pos ident exprs) table = 
-  cCallArgs exprs 0 table
+  cExprs exprs 0 table
   ++ indentation ++ "call proc_" ++ ident ++ "\n"
 
 cIf :: Stmt -> SymTable -> String
@@ -317,11 +317,11 @@ cLvalue (LMatrixRef pos ident expr1 expr2) reg table =
 cCallBuiltin :: Ident -> SymTable -> String
 cCallBuiltin ident table = indentation ++ "call_builtin " ++ ident ++ "\n"
 
-cCallArgs :: [Expr] -> Int -> SymTable -> String
-cCallArgs [] _ _ = ""
-cCallArgs [expr] reg table = cExpr expr reg table
-cCallArgs (expr:exprs) reg table = 
-  cExpr expr reg table ++ cCallArgs exprs (reg + 1) table
+cExprs :: [Expr] -> Int -> SymTable -> String
+cExprs [] _ _ = ""
+cExprs [expr] reg table = cExpr expr reg table
+cExprs (expr:exprs) reg table = 
+  cExpr expr reg table ++ cExprs exprs (reg + 1) table
 
 cId :: Expr -> Int -> SymTable -> String
 cId (Id pos ident) reg table =
