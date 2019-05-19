@@ -232,9 +232,12 @@ cStmt (Write pos expr) table =
   cWrite (Write pos expr) table
 cStmt (ProcCall pos ident exprs) table = 
   cProcCall (ProcCall pos ident exprs) table
-cStmt (If pos expr stmts) table = ""
-cStmt (IfElse pos expr stmts1 stmts2) table = ""
-cStmt (While pos expr stmts) table = ""
+cStmt (If pos expr stmts) table = 
+  cIf (If pos expr stmts) table
+cStmt (IfElse pos expr stmts1 stmts2) table = 
+  cIfElse (IfElse pos expr stmts1 stmts2) table
+cStmt (While pos expr stmts) table = 
+  cWhile (While pos expr stmts) table
 
 cAssign :: Stmt -> SymTable -> String
 cAssign (Assign pos lvalue expr) table =
@@ -246,11 +249,12 @@ cRead (Read pos lvalue) table =
   cCallBuiltin ("read_" ++ t) table
   ++ cLvalue lvalue 0 table
   where 
-    t = case cGetBaseType (cGetLvalueIdent lvalue) table of
-          BoolType -> "bool"
-          IntType -> "int"
-          FloatType -> "real"
-          StringType -> error $ "RuntimeError: Cannot read string"
+    t = 
+      case cGetBaseType (cGetLvalueIdent lvalue) table of
+        BoolType -> "bool"
+        IntType -> "int"
+        FloatType -> "real"
+        StringType -> error $ "RuntimeError: Cannot read string"
 
 cWrite :: Stmt -> SymTable -> String
 cWrite (Write pos expr) table = 
@@ -260,7 +264,16 @@ cWrite (Write pos expr) table =
 cProcCall :: Stmt -> SymTable -> String
 cProcCall (ProcCall pos ident exprs) table = 
   cCallArgs exprs 0 table
-  ++ (cCallProc ident table)
+  ++ indentation ++ "call proc_" ++ ident ++ "\n"
+
+cIf :: Stmt -> SymTable -> String
+cIf (If pos expr stmts) table = ""
+
+cIfElse :: Stmt -> SymTable -> String
+cIfElse (IfElse pos expr stmts1 stmts2) table = ""
+
+cWhile :: Stmt -> SymTable -> String
+cWhile (While pos expr stmts) table = ""
 
 cGetLvalueIdent :: Lvalue -> String
 cGetLvalueIdent (LId pos ident) = ident
@@ -301,20 +314,14 @@ cLvalue (LMatrixRef pos ident expr1 expr2) reg table =
         (Matrix baseType i j) -> i
         otherwise -> error $ "InternalError: Not MatrixRef"
 
-cCallProc :: Ident -> SymTable -> String
-cCallProc ident table = indentation ++ "call proc_" ++ ident ++ "\n"
-
 cCallBuiltin :: Ident -> SymTable -> String
 cCallBuiltin ident table = indentation ++ "call_builtin " ++ ident ++ "\n"
 
 cCallArgs :: [Expr] -> Int -> SymTable -> String
 cCallArgs [] _ _ = ""
-cCallArgs [expr] reg table = cCallArg expr reg table
+cCallArgs [expr] reg table = cExpr expr reg table
 cCallArgs (expr:exprs) reg table = 
-  cCallArg expr reg table ++ cCallArgs exprs (reg + 1) table
-
-cCallArg :: Expr -> Int -> SymTable -> String
-cCallArg expr reg table = cExpr expr reg table
+  cExpr expr reg table ++ cCallArgs exprs (reg + 1) table
 
 cId :: Expr -> Int -> SymTable -> String
 cId (Id pos ident) reg table =
