@@ -464,7 +464,11 @@ cCheckTypeNum expr table =
 cConvertType :: Expr -> Expr -> Int -> SymTable -> String       
 cConvertType expr1 expr2 reg table =
   case cGetExprBaseType expr1 table of
-    IntType -> ""
+    IntType -> 
+      case cGetExprBaseType expr2 table of
+        FloatType -> error $ "RuntimeError: Type error"
+        IntType -> ""
+        otherwise -> error $ "RuntimeError: Type error"
     FloatType -> 
       case cGetExprBaseType expr2 table of
         FloatType -> ""

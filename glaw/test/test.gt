@@ -18,9 +18,7 @@ proc main()
 begin
     a[3,2] := 19;
     c := 0;
-    while (c < 5) do
-        write c;
-        write "\n";
-        c := c + 1;
-    od
+    if (c < 1) then
+        write "OK\n";
+    fi
 end

@@ -44,22 +44,14 @@ proc_main:
     store_indirect r1, r0
     int_const r0, 0
     store 17, r0
-label_0:
-    load r1, 17
-    int_const r2, 5
-    cmp_lt_int r1, r1, r2
-    branch_on_true r1, label_1
-    branch_uncond label_2
-label_1:
-    load r0, 17
-    call_builtin print_int
-    string_const r0, "\n"
-    call_builtin print_string
     load r0, 17
     int_const r1, 1
-    add_int r0, r0, r1
-    store 17, r0
-    branch_uncond label_0
-label_2:
+    cmp_lt_int r0, r0, r1
+    branch_on_true r0, label_0
+    branch_uncond label_1
+label_0:
+    string_const r0, "OK\n"
+    call_builtin print_string
+label_1:
     pop_stack_frame 18
     return
