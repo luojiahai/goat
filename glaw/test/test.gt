@@ -1,7 +1,5 @@
 proc p(val int x, ref float y)
     int d;
-    int a;
-    bool f;
 begin
     write "KK";
     write "\n";
@@ -9,13 +7,7 @@ end
 
 proc main()
     int a[4,4];
-    float b;
-    bool c;
 begin
-    # a[1,1] := 1;
-    # call p(1,a[0,0]);
-    read b;
-    c := (2.3 > 1) && (1 < 4);
-    call p(1,b);
+    a[3,2] := 19;
     write "Hello, World!\n";
 end

@@ -184,6 +184,15 @@ cGetBaseType ident (SymTable header prmts hashMap) =
         Nothing -> error $ "InternalError: No AType"
     Nothing -> error $ "InternalError: cGetBaseType " ++ ident
 
+cGetGoatType :: Ident -> SymTable -> GoatType
+cGetGoatType ident (SymTable header prmts hashMap) =
+  case stLookupHashMap ident hashMap of
+    Just symbol ->
+      case stAGoatType symbol of
+        Just (AGoatType goatType) -> goatType
+        Nothing -> error $ "InternalError: No AGoatType"
+    Nothing -> error $ "InternalError: cGetGoatType " ++ ident
+
 cIntConst :: Int -> Int -> String
 cIntConst const reg = 
   indentation ++ "int_const " ++ "r" ++ show reg
@@ -229,26 +238,19 @@ cStmt (While pos expr stmts) table = ""
 
 cAssign :: Stmt -> SymTable -> String
 cAssign (Assign pos lvalue expr) table =
-  let ident = cGetLvalueIdent lvalue
-  in 
-    case (cGetBaseType ident table) 
-      == (cGetExprBaseType expr table) of
-      True ->
-        cExpr expr 0 table
-        ++ (cStore (cGetSlot ident table) 0 1)
-      False ->
-        error $ "RuntimeError: Type error when assign"
+  cExpr expr 0 table
+  ++ cLvalue lvalue 0 table
 
 cRead :: Stmt -> SymTable -> String
 cRead (Read pos lvalue) table = 
-  let ident = cGetLvalueIdent lvalue
-  in
-    case cGetBaseType ident table of
-      BoolType -> cCallBuiltin "read_bool" table
-      IntType -> cCallBuiltin "read_int" table
-      FloatType -> cCallBuiltin "read_real" table
-      StringType -> error $ "RuntimeError: Cannot read string"
-    ++ (cStore (cGetSlot ident table) 0 1)
+  cCallBuiltin ("read_" ++ t) table
+  ++ cLvalue lvalue 0 table
+  where 
+    t = case cGetBaseType (cGetLvalueIdent lvalue) table of
+          BoolType -> "bool"
+          IntType -> "int"
+          FloatType -> "real"
+          StringType -> error $ "RuntimeError: Cannot read string"
 
 cWrite :: Stmt -> SymTable -> String
 cWrite (Write pos expr) table = 
@@ -265,10 +267,39 @@ cGetLvalueIdent (LId pos ident) = ident
 cGetLvalueIdent (LArrayRef pos ident expr) = ident
 cGetLvalueIdent (LMatrixRef pos ident expr1 expr2) = ident
 
--- cLvalue :: Lvalue -> SymTable -> String
--- cLvalue (LId pos ident) table = ""
--- cLvalue (LArrayRef pos ident expr) table = ""
--- cLvalue (LMatrixRef pos ident expr1 expr2) table = ""
+cLvalue :: Lvalue -> Int -> SymTable -> String
+cLvalue (LId pos ident) reg table = 
+  indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
+  where slot = cGetSlot ident table
+cLvalue (LArrayRef pos ident expr) reg table = 
+  cExpr expr (reg + 2) table
+  ++ indentation ++ "load_address " 
+  ++ "r" ++ show (reg + 1) ++ ", " ++ show slot ++ "\n"
+  ++ indentation ++ "sub_offset " ++ "r" ++ show (reg + 1) ++ ", "
+  ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 2) ++ "\n"
+  ++ indentation ++ "store_indirect " 
+  ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show reg ++ "\n"
+  where slot = cGetSlot ident table
+cLvalue (LMatrixRef pos ident expr1 expr2) reg table = 
+  cExpr expr1 (reg + 2) table ++ cExpr expr2 (reg + 3) table
+  ++ indentation ++ "int_const " ++ "r" ++ show (reg + 4) 
+  ++ ", " ++ show len ++ "\n"
+  ++ indentation ++ "mul_int " ++ "r" ++ show (reg + 2)
+  ++ ", " ++ "r" ++ show (reg + 2) ++ ", " ++ "r" ++ show (reg + 4) ++ "\n"
+  ++ indentation ++ "add_int " ++ "r" ++ show (reg + 2)
+  ++ ", " ++ "r" ++ show (reg + 2) ++ ", " ++ "r" ++ show (reg + 3) ++ "\n"
+  ++ indentation ++ "load_address " 
+  ++ "r" ++ show (reg + 1) ++ ", " ++ show slot ++ "\n"
+  ++ indentation ++ "sub_offset " ++ "r" ++ show (reg + 1) ++ ", "
+  ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 2) ++ "\n"
+  ++ indentation ++ "store_indirect " 
+  ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show reg ++ "\n"
+  where 
+    slot = cGetSlot ident table
+    len = 
+      case cGetGoatType ident table of
+        (Matrix baseType i j) -> i
+        otherwise -> error $ "InternalError: Not MatrixRef"
 
 cCallProc :: Ident -> SymTable -> String
 cCallProc ident table = indentation ++ "call proc_" ++ ident ++ "\n"
@@ -291,10 +322,37 @@ cId (Id pos ident) reg table =
   where slot = cGetSlot ident table
 
 cArrayRef :: Expr -> Int -> SymTable -> String
-cArrayRef (ArrayRef pos ident expr) reg table = ""
+cArrayRef (ArrayRef pos ident expr) reg table =
+  cExpr expr (reg + 1) table
+  ++ indentation ++ "load_address " 
+  ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
+  ++ indentation ++ "sub_offset " ++ "r" ++ show reg ++ ", "
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
+  ++ indentation ++ "load_indirect " 
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+  where slot = cGetSlot ident table
 
 cMatrixRef :: Expr -> Int -> SymTable -> String
-cMatrixRef (MatrixRef pos ident expr1 expr2) reg table = ""
+cMatrixRef (MatrixRef pos ident expr1 expr2) reg table = 
+  cExpr expr1 (reg + 1) table ++ cExpr expr2 (reg + 2) table
+  ++ indentation ++ "int_const " ++ "r" ++ show (reg + 3) 
+  ++ ", " ++ show len ++ "\n"
+  ++ indentation ++ "mul_int " ++ "r" ++ show (reg + 1)
+  ++ ", " ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 3) ++ "\n"
+  ++ indentation ++ "add_int " ++ "r" ++ show (reg + 1)
+  ++ ", " ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 2) ++ "\n"
+  ++ indentation ++ "load_address " 
+  ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
+  ++ indentation ++ "sub_offset " ++ "r" ++ show reg ++ ", "
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
+  ++ indentation ++ "load_indirect " 
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+  where 
+    slot = cGetSlot ident table
+    len = 
+      case cGetGoatType ident table of
+        (Matrix baseType i j) -> i
+        otherwise -> error $ "InternalError: Not MatrixRef"
 
 cAnd :: Expr -> Int -> SymTable -> String
 cAnd (And pos expr1 expr2) reg table =
