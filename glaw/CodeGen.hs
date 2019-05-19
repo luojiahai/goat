@@ -16,22 +16,22 @@ import GoatAST
 import SymTable
 import Control.Monad.State
 
--- type LabelCounter = Int 
+type LabelCounter = Int 
 
--- type CodeGen a = State LabelCounter a
+type CodeGen a = State LabelCounter a
 
--- getLabelCounter :: CodeGen LabelCounter
--- getLabelCounter =
---   do 
---     label <- get
---     return label
+getLabelCounter :: CodeGen LabelCounter
+getLabelCounter =
+  do 
+    label <- get
+    return label
 
--- incLabelCounter :: CodeGen ()
--- incLabelCounter =
---   do
---     label <- get
---     put (label + 1)
---     return ()
+incLabelCounter :: CodeGen ()
+incLabelCounter =
+  do
+    label <- get
+    put (label + 1)
+    return ()
 
 indentation = "    "
 
@@ -52,7 +52,7 @@ cProc (Procedure pos ident prmts decls stmts) tables =
     Just table ->
       "\nproc_" ++ ident ++ ":\n"
       ++ cStackFrame "push" table
-      ++ cPrmts prmts table
+      ++ cPrmts prmts 0 table
       ++ cDecls decls table
       ++ cStmts stmts table
       ++ cStackFrame "pop" table
@@ -64,29 +64,23 @@ cStackFrame command (SymTable header prmts hashMap) =
   indentation ++ command ++ "_stack_frame" ++ " " 
   ++ show (stHashMapSize hashMap) ++ "\n"
 
-cPrmts :: [FormalArgSpec] -> SymTable -> String
-cPrmts [] _ = ""
-cPrmts [prmt] table = cPrmt prmt table
-cPrmts (prmt:prmts) table = cPrmt prmt table ++ cPrmts prmts table
+cPrmts :: [FormalArgSpec] -> Int -> SymTable -> String
+cPrmts [] _ _ = ""
+cPrmts [prmt] reg table = cPrmt prmt reg table
+cPrmts (prmt:prmts) reg table = 
+  cPrmt prmt reg table ++ cPrmts prmts (reg + 1) table
 
-cPrmt :: FormalArgSpec -> SymTable -> String
-cPrmt (FormalArgSpec pos parMode baseType ident) table =
+cPrmt :: FormalArgSpec -> Int -> SymTable -> String
+cPrmt (FormalArgSpec pos parMode baseType ident) reg table =
   case baseType of
     BoolType -> 
-      cBoolConst False 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
       where slot = cGetSlot ident table
     IntType -> 
-      cIntConst 0 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
       where slot = cGetSlot ident table
     FloatType -> 
-      cFloatConst 0.0 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
-      where slot = cGetSlot ident table
-    StringType -> 
-      cStringConst "" 0
-      ++ indentation ++ "store " ++ show slot ++ ", " ++ "r0\n"
+      indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
       where slot = cGetSlot ident table
 
 cDecls :: [Decl] -> SymTable -> String
@@ -261,10 +255,20 @@ cIf (If pos expr stmts) table =
   cExpr expr 0 table
   ++ indentation ++ "branch_on_true "
   ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 0 ++ "\n"
-  ++ indentation ++ "branch_uncod " ++ "label_" ++ show 1 ++ "\n"
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show 1 ++ "\n"
+  ++ "label_" ++ show 0 ++ ":\n" ++ (cStmts stmts table)
+  ++ "label_" ++ show 1 ++ ":\n"
 
 cIfElse :: Stmt -> SymTable -> String
-cIfElse (IfElse pos expr stmts1 stmts2) table = ""
+cIfElse (IfElse pos expr stmts1 stmts2) table = 
+  cExpr expr 0 table
+  ++ indentation ++ "branch_on_true "
+  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 0 ++ "\n"
+  ++ indentation ++ "branch_on_false " 
+  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 1 ++ "\n"
+  ++ "label_" ++ show 0 ++ ":\n" ++ (cStmts stmts1 table) ++ "\n"
+  ++ "label_" ++ show 1 ++ ":\n" ++ (cStmts stmts2 table) ++ "\n"
+  ++ "label_" ++ show 2 ++ ":\n"
 
 cWhile :: Stmt -> SymTable -> String
 cWhile (While pos expr stmts) table = ""

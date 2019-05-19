@@ -1,13 +1,20 @@
 proc p(val int x, ref float y)
     int d;
 begin
-    write "KK";
-    write "\n";
+    if (x = 1) then
+        write "KK";
+        write "\n";
+    else
+        write "NOTKK";
+        write "\n";
+    fi
 end
 
 proc main()
     int a[4,4];
+    bool b;
 begin
     a[3,2] := 19;
-    write "Hello, World!\n";
+    b := false;
+    call p(10,2);
 end
