@@ -428,7 +428,8 @@ cExprAddr (ArrayRef pos ident expr) reg table tables =
   cArrayRef (ArrayRef pos ident expr) True reg table  tables
 cExprAddr (MatrixRef pos ident expr1 expr2) reg table tables =
   cMatrixRef (MatrixRef pos ident expr1 expr2) True reg table tables
-cExprAddr _ _ _ _ = error $ "RuntimeError: Ref must be Id/ArrayRef/MatrixRef"
+cExprAddr _ _ _ _ = 
+  error $ "RuntimeError: Ref must be Id/ArrayRef/MatrixRef"
 
 cId :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
 cId (Id pos ident) isLoadAddr reg table tables =
@@ -530,8 +531,10 @@ cRel (Rel pos relOp expr1 expr2) reg table tables =
       case cGetExprBaseType expr1 table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> error $ "RuntimeError: Cannot compare bool " ++ show pos
-        StringType -> error $ "RuntimeError: Cannot compare string " ++ show pos
+        BoolType -> 
+          error $ "RuntimeError: Cannot compare bool " ++ show pos
+        StringType -> 
+          error $ "RuntimeError: Cannot compare string " ++ show pos
 
 cBinOpExp :: Expr -> Int -> SymTable -> [SymTable] -> String
 cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
@@ -552,8 +555,10 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
       case cGetExprBaseType expr1 table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> error $ "RuntimeError: Cannot evaluate bool " ++ show pos
-        StringType -> error $ "RuntimeError: Cannot evaluate string " ++ show pos
+        BoolType -> 
+          error $ "RuntimeError: Cannot evaluate bool " ++ show pos
+        StringType -> 
+          error $ "RuntimeError: Cannot evaluate string " ++ show pos
 
 cUnaryMinus :: Expr -> Int -> SymTable -> [SymTable] -> String
 cUnaryMinus (UnaryMinus pos expr) reg table tables =
@@ -566,8 +571,10 @@ cUnaryMinus (UnaryMinus pos expr) reg table tables =
       case cGetExprBaseType expr table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> error $ "RuntimeError: Cannot unary minus bool " ++ show pos
-        StringType -> error $ "RuntimeError: Cannot unary minus string " ++ show pos
+        BoolType -> 
+          error $ "RuntimeError: Cannot unary minus bool " ++ show pos
+        StringType -> 
+          error $ "RuntimeError: Cannot unary minus string " ++ show pos
 
 cCheckTypeNum :: Expr -> SymTable -> [SymTable] -> String
 cCheckTypeNum expr table tables =
@@ -585,15 +592,18 @@ cConvertType expr1 expr2 reg table tables =
           indentation ++ "int_to_real " 
           ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
         IntType -> ""
-        otherwise -> error $ "RuntimeError: Type error, must be Int or Float type"
+        otherwise -> 
+          error $ "RuntimeError: Type error, must be Int or Float type"
     FloatType -> 
       case cGetExprBaseType expr2 table tables of
         FloatType -> ""
         IntType ->
           indentation ++ "int_to_real " 
           ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-        otherwise -> error $ "RuntimeError: Type error, must be Int or Float type"
-    otherwise -> error $ "RuntimeError: Type error, must be Int or Float type"
+        otherwise -> 
+          error $ "RuntimeError: Type error, must be Int or Float type"
+    otherwise -> 
+      error $ "RuntimeError: Type error, must be Int or Float type"
 
 cExpr :: Expr -> Int -> SymTable -> [SymTable] -> String
 cExpr (BoolCon pos const) reg table tables = cBoolConst const reg
