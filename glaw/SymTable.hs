@@ -147,8 +147,9 @@ stBind key value hashMap =
     Just value -> error $ "SemanticError: Duplicate variable " ++ key
     Nothing -> let hashMap' = Data.Map.insert key value hashMap in hashMap'
 
-stLookupHashMap :: String -> HashMap -> Maybe Symbol
-stLookupHashMap key hashMap = Data.Map.lookup key hashMap
+stLookupHashMap :: String -> SymTable -> Maybe Symbol
+stLookupHashMap key (SymTable header prmts hashMap) = 
+  Data.Map.lookup key hashMap
 
 stLookupSymTable :: String -> [SymTable] -> Maybe SymTable
 stLookupSymTable ident [] = Nothing

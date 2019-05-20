@@ -155,8 +155,8 @@ cStore slot reg n =
   ++ cStore (slot + 1) reg (n - 1)
 
 cGetSlot :: Ident -> SymTable -> [SymTable] -> Int
-cGetSlot ident (SymTable header prmts hashMap) tables =
-  case stLookupHashMap ident hashMap of
+cGetSlot ident table tables =
+  case stLookupHashMap ident table of
     Just symbol ->
       case stASlot symbol of
         Just (ASlot slot) -> slot
@@ -164,8 +164,8 @@ cGetSlot ident (SymTable header prmts hashMap) tables =
     Nothing -> error $ "InternalError: cGetSlot " ++ ident
 
 cGetBaseType :: Ident -> SymTable -> [SymTable] -> BaseType
-cGetBaseType ident (SymTable header prmts hashMap) tables =
-  case stLookupHashMap ident hashMap of
+cGetBaseType ident table tables =
+  case stLookupHashMap ident table of
     Just symbol ->
       case stAType symbol of
         Just (AType baseType) -> baseType
@@ -173,8 +173,8 @@ cGetBaseType ident (SymTable header prmts hashMap) tables =
     Nothing -> error $ "InternalError: cGetBaseType " ++ ident
 
 cGetGoatType :: Ident -> SymTable -> [SymTable] -> GoatType
-cGetGoatType ident (SymTable header prmts hashMap) tables =
-  case stLookupHashMap ident hashMap of
+cGetGoatType ident table tables =
+  case stLookupHashMap ident table of
     Just symbol ->
       case stAGoatType symbol of
         Just (AGoatType goatType) -> goatType
@@ -299,7 +299,21 @@ cGetLvalueIdent (LMatrixRef pos ident expr1 expr2) = ident
 
 cLvalue :: Lvalue -> Int -> SymTable -> [SymTable] -> String
 cLvalue (LId pos ident) reg table tables = 
-  indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
+  case stLookupHashMap ident table of
+    Just symbol ->
+      case stAParMode symbol of
+        Just (AParMode Val) -> 
+          indentation ++ "store " 
+          ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
+        Just (AParMode Ref) -> 
+          indentation ++ "load " 
+          ++ "r" ++ show (reg + 1) ++ ", " ++ show slot ++ "\n"
+          ++ indentation ++ "store_indirect " 
+          ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show reg ++ "\n"
+        Nothing -> 
+          indentation ++ "store " 
+          ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
+    Nothing -> error $ "InternalError: cLvalue " ++ ident
   where slot = cGetSlot ident table tables
 cLvalue (LArrayRef pos ident expr) reg table tables = 
   cExpr expr (reg + 2) table tables
@@ -350,64 +364,97 @@ cProcArg ident expr i reg table tables =
       case parMode of
         Val -> 
           case stAType symbol of
-            Just (AType baseType) ->
-              if (cGetExprBaseType expr table tables) == baseType 
-              then cExpr expr reg table tables
-              else 
-                case baseType of
-                  FloatType ->
-                    if (cGetExprBaseType expr table tables) == IntType
-                    then 
-                      cExpr expr reg table tables
-                      ++ indentation ++ "int_to_real " 
-                      ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
-                    else
-                      error $ "RuntimeError: Type error"
-                  otherwise -> error $ "RuntimeError: Type error"
+            Just (AType baseType) -> 
+              cProcArgVal ident baseType expr reg table tables
             Nothing -> error $ "InternalError: cProcArg"
         Ref -> 
           case stAType symbol of
-            Just (AType baseType) ->
-              if (cGetExprBaseType expr table tables) == baseType 
-              then cExpr expr reg table tables
-              else
-                case baseType of
-                  FloatType ->
-                    if (cGetExprBaseType expr table tables) == IntType
-                    then 
-                      cExpr expr reg table tables
-                      ++ indentation ++ "int_to_real " 
-                      ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
-                    else
-                      error $ "RuntimeError: Type error"
-                  otherwise -> error $ "RuntimeError: Type error"
+            Just (AType baseType) -> 
+              cProcArgRef ident baseType expr reg table tables
             Nothing -> error $ "InternalError: cProcArg"
     Nothing -> error $ "InternalError: cProcArg"
-  where 
-    symbol = 
-      case stLookupSymTable ident tables of
-        Just table -> stGetArgSymbol i table
-        Nothing -> error $ "InternalError: cProcArg"
+    where 
+      symbol = 
+        case stLookupSymTable ident tables of
+          Just table' -> stGetArgSymbol i table'
+          Nothing -> error $ "InternalError: cProcArg"
+  
+cProcArgVal :: Ident -> BaseType -> Expr -> Int -> SymTable -> [SymTable] -> String
+cProcArgVal ident baseType expr reg table tables =
+  if (cGetExprBaseType expr table tables) == baseType 
+  then cExpr expr reg table tables
+  else 
+    case baseType of
+      FloatType ->
+        if (cGetExprBaseType expr table tables) == IntType
+        then 
+          cExpr expr reg table tables
+          ++ indentation ++ "int_to_real " 
+          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+        else
+          error $ "RuntimeError: Type error"
+      otherwise -> error $ "RuntimeError: Type error"
 
+cProcArgRef :: Ident -> BaseType -> Expr -> Int -> SymTable -> [SymTable] -> String
+cProcArgRef ident baseType expr reg table tables =
+  if (cGetExprBaseType expr table tables) == baseType 
+  then cExprAddr expr reg table tables
+  else
+    case baseType of
+      FloatType ->
+        if (cGetExprBaseType expr table tables) == IntType
+        then 
+          cExprAddr expr reg table tables
+          ++ indentation ++ "int_to_real " 
+          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+        else
+          error $ "RuntimeError: Type error"
+      otherwise -> error $ "RuntimeError: Type error"
 
-cId :: Expr -> Int -> SymTable -> [SymTable] -> String
-cId (Id pos ident) reg table tables =
-  indentation ++ "load " ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
+cExprAddr :: Expr -> Int -> SymTable -> [SymTable] -> String
+cExprAddr (Id pos ident) reg table tables = 
+  cId (Id pos ident) True reg table tables
+cExprAddr (ArrayRef pos ident expr) reg table tables = 
+  cArrayRef (ArrayRef pos ident expr) True reg table  tables
+cExprAddr (MatrixRef pos ident expr1 expr2) reg table tables =
+  cMatrixRef (MatrixRef pos ident expr1 expr2) True reg table tables
+cExprAddr _ _ _ _ = error $ "RuntimeError: Ref must be Id/ArrayRef/MatrixRef"
+
+cId :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
+cId (Id pos ident) isLoadAddr reg table tables =
+  indentation ++ 
+  case isLoadAddr of
+    True -> "load_address "
+    False -> "load " 
+  ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
+  ++
+  case stLookupHashMap ident table of
+    Just symbol ->
+      case stAParMode symbol of
+        Just (AParMode Val) -> ""
+        Just (AParMode Ref) -> 
+          indentation ++ "load_indirect " 
+          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+        Nothing -> ""
+    Nothing -> error $ "InternalError: cId " ++ ident
   where slot = cGetSlot ident table tables
 
-cArrayRef :: Expr -> Int -> SymTable -> [SymTable] -> String
-cArrayRef (ArrayRef pos ident expr) reg table tables =
+cArrayRef :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
+cArrayRef (ArrayRef pos ident expr) isLoadAddr reg table tables =
   cExpr expr (reg + 1) table tables
   ++ indentation ++ "load_address " 
   ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   ++ indentation ++ "sub_offset " ++ "r" ++ show reg ++ ", "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-  ++ indentation ++ "load_indirect " 
+  ++ indentation ++
+  case isLoadAddr of
+    True -> "load " 
+    False -> "load_indirect " 
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
   where slot = cGetSlot ident table tables
 
-cMatrixRef :: Expr -> Int -> SymTable -> [SymTable] -> String
-cMatrixRef (MatrixRef pos ident expr1 expr2) reg table tables = 
+cMatrixRef :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
+cMatrixRef (MatrixRef pos ident expr1 expr2) isLoadAddr reg table tables = 
   cExpr expr1 (reg + 1) table tables ++ cExpr expr2 (reg + 2) table tables
   ++ indentation ++ "int_const " ++ "r" ++ show (reg + 3) 
   ++ ", " ++ show len ++ "\n"
@@ -419,7 +466,10 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) reg table tables =
   ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   ++ indentation ++ "sub_offset " ++ "r" ++ show reg ++ ", "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-  ++ indentation ++ "load_indirect " 
+  ++ indentation ++
+  case isLoadAddr of
+    True -> "load " 
+    False -> "load_indirect " 
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
   where 
     slot = cGetSlot ident table tables
@@ -540,11 +590,11 @@ cExpr (IntCon pos const) reg table tables = cIntConst const reg
 cExpr (FloatCon pos const) reg table tables = cFloatConst const reg
 cExpr (StrCon pos const) reg table tables = cStringConst const reg
 cExpr (Id pos ident) reg table tables = 
-  cId (Id pos ident) reg table tables
+  cId (Id pos ident) False reg table tables
 cExpr (ArrayRef pos ident expr) reg table tables = 
-  cArrayRef (ArrayRef pos ident expr) reg table  tables
+  cArrayRef (ArrayRef pos ident expr) False reg table  tables
 cExpr (MatrixRef pos ident expr1 expr2) reg table tables =
-  cMatrixRef (MatrixRef pos ident expr1 expr2) reg table tables
+  cMatrixRef (MatrixRef pos ident expr1 expr2) False reg table tables
 cExpr (And pos expr1 expr2) reg table tables = 
   cAnd (And pos expr1 expr2) reg table tables
 cExpr (Or pos expr1 expr2) reg table tables = 

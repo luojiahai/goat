@@ -102,8 +102,8 @@ aLvalue (LMatrixRef pos ident expr1 expr2) tables table =
   aIdMatrix ident tables table
 
 aIdBase :: Ident -> [SymTable] -> SymTable -> Bool
-aIdBase ident tables (SymTable header prmts hashMap) =
-  case stLookupHashMap ident hashMap of
+aIdBase ident tables table =
+  case stLookupHashMap ident table of
     Just value -> 
       case stAGoatType value of
         Just (AGoatType goatType) -> case goatType of
@@ -115,8 +115,8 @@ aIdBase ident tables (SymTable header prmts hashMap) =
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
 aIdArray :: Ident -> [SymTable] -> SymTable -> Bool
-aIdArray ident tables (SymTable header prmts hashMap) =
-  case stLookupHashMap ident hashMap of
+aIdArray ident tables table =
+  case stLookupHashMap ident table of
     Just value -> 
       case stAGoatType value of
         Just (AGoatType goatType) -> case goatType of
@@ -128,8 +128,8 @@ aIdArray ident tables (SymTable header prmts hashMap) =
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
 aIdMatrix :: Ident -> [SymTable] -> SymTable -> Bool
-aIdMatrix ident tables (SymTable header prmts hashMap) =
-  case stLookupHashMap ident hashMap of
+aIdMatrix ident tables table =
+  case stLookupHashMap ident table of
     Just value -> 
       case stAGoatType value of
         Just (AGoatType goatType) -> case goatType of

@@ -6,14 +6,18 @@ proc_p:
     store 1, r1
     int_const r0, 0
     store 2, r0
-    load r0, 2
-    call_builtin print_int
+    real_const r0, 100.123
+    load r1, 1
+    store_indirect r1, r0
+    load r0, 1
+    load_indirect r0, r0
+    call_builtin print_real
     string_const r0, "\n"
     call_builtin print_string
     pop_stack_frame 3
     return
 proc_main:
-    push_stack_frame 18
+    push_stack_frame 19
     int_const r0, 0
     store 0, r0
     store 1, r0
@@ -35,6 +39,8 @@ proc_main:
     store 16, r0
     int_const r0, 0
     store 17, r0
+    real_const r0, 0.0
+    store 18, r0
     int_const r0, 19
     int_const r2, 3
     int_const r3, 2
@@ -46,9 +52,10 @@ proc_main:
     store_indirect r1, r0
     int_const r0, 0
     store 17, r0
+    real_const r0, 2.3
+    store 18, r0
     int_const r0, 1
-    int_const r1, 2
-    int_to_real r1, r1
+    load_address r1, 18
     call proc_p
-    pop_stack_frame 18
+    pop_stack_frame 19
     return
