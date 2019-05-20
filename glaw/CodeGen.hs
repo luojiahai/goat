@@ -350,7 +350,8 @@ cCallBuiltin :: Ident -> SymTable -> [SymTable] -> String
 cCallBuiltin ident table tables = 
   indentation ++ "call_builtin " ++ ident ++ "\n"
 
-cProcArgs :: Ident -> [Expr] -> Int -> Int -> SymTable -> [SymTable] -> String
+cProcArgs :: Ident -> [Expr] -> Int -> Int 
+  -> SymTable -> [SymTable] -> String
 cProcArgs _ [] _ _ _ _ = ""
 cProcArgs ident [expr] i reg table tables = 
   cProcArg ident expr i reg table tables
@@ -358,7 +359,8 @@ cProcArgs ident (expr:exprs) i reg table tables =
   cProcArg ident expr i reg table tables 
   ++ cProcArgs ident exprs (i + 1) (reg + 1) table tables
 
-cProcArg :: Ident -> Expr -> Int -> Int -> SymTable -> [SymTable] -> String
+cProcArg :: Ident -> Expr -> Int -> Int 
+  -> SymTable -> [SymTable] -> String
 cProcArg ident expr i reg table tables = 
   case stAParMode symbol of
     Just (AParMode parMode) ->
