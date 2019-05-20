@@ -151,7 +151,8 @@ cInitMatrix (Decl pos ident (Matrix baseType i j)) table tables =
 cStore :: Int -> Int -> Int -> String
 cStore slot reg 0 = ""
 cStore slot reg n = 
-  indentation ++ "store " ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
+  indentation ++ "store " 
+  ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
   ++ cStore (slot + 1) reg (n - 1)
 
 cGetSlot :: Ident -> SymTable -> [SymTable] -> Int
