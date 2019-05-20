@@ -16,24 +16,8 @@ import GoatAST
 import SymTable
 import Control.Monad.State
 
-type LabelCounter = Int 
-
-type CodeGen a = State LabelCounter a
-
-getLabelCounter :: CodeGen LabelCounter
-getLabelCounter =
-  do 
-    label <- get
-    return label
-
-incLabelCounter :: CodeGen ()
-incLabelCounter =
-  do
-    label <- get
-    put (label + 1)
-    return ()
-
 indentation = "    "
+
 
 codegen :: Program -> [SymTable] -> String
 codegen (Program procs) tables = 
@@ -65,7 +49,9 @@ cProc (Procedure pos ident prmts decls stmts) label tables =
       ++ cStackFrame "pop" table tables
       ++ indentation ++ "return")
       where (label', stmtsStr) = cStmts stmts label table tables
-    Nothing -> error $ "RuntimeError: Procedure " ++ ident ++ " not found"
+    Nothing -> 
+      error $ "RuntimeError: Procedure " 
+      ++ ident ++ " not found " ++ show pos
 
 cStackFrame :: String -> SymTable -> [SymTable] -> String
 cStackFrame command (SymTable header prmts hashMap) tables = 
@@ -254,7 +240,8 @@ cRead (Read pos lvalue) table tables =
         BoolType -> "bool"
         IntType -> "int"
         FloatType -> "real"
-        StringType -> error $ "RuntimeError: Cannot read string"
+        StringType -> 
+          error $ "RuntimeError: Cannot read string " ++ show pos
 
 cWrite :: Stmt -> SymTable -> [SymTable] -> String
 cWrite (Write pos expr) table tables = 
@@ -331,7 +318,8 @@ cLvalue (LId pos ident) reg table tables =
         Nothing -> 
           indentation ++ "store " 
           ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
-    Nothing -> error $ "InternalError: cLvalue " ++ ident
+    Nothing -> 
+      error $ "InternalError: cLvalue " ++ ident ++ " " ++ show pos
   where slot = cGetSlot ident table tables
 cLvalue (LArrayRef pos ident expr) reg table tables = 
   cExpr expr (reg + 2) table tables
@@ -361,7 +349,7 @@ cLvalue (LMatrixRef pos ident expr1 expr2) reg table tables =
     len = 
       case cGetGoatType ident table tables of
         (Matrix baseType i j) -> i
-        otherwise -> error $ "InternalError: cLvalue"
+        otherwise -> error $ "InternalError: cLvalue " ++ show pos
 
 cCallBuiltin :: Ident -> SymTable -> [SymTable] -> String
 cCallBuiltin ident table tables = 
@@ -458,7 +446,8 @@ cId (Id pos ident) isLoadAddr reg table tables =
           indentation ++ "load_indirect " 
           ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
         Nothing -> ""
-    Nothing -> error $ "InternalError: cId " ++ ident
+    Nothing -> 
+      error $ "InternalError: cId " ++ ident ++ " " ++ show pos
   where slot = cGetSlot ident table tables
 
 cArrayRef :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
@@ -498,7 +487,7 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) isLoadAddr reg table tables =
     len = 
       case cGetGoatType ident table tables of
         (Matrix baseType i j) -> i
-        otherwise -> error $ "InternalError: cMatrixRef"
+        otherwise -> error $ "InternalError: cMatrixRef " ++ show pos
 
 cAnd :: Expr -> Int -> SymTable -> [SymTable] -> String
 cAnd (And pos expr1 expr2) reg table tables =
@@ -541,8 +530,8 @@ cRel (Rel pos relOp expr1 expr2) reg table tables =
       case cGetExprBaseType expr1 table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> error $ "RuntimeError: Cannot compare bool"
-        StringType -> error $ "RuntimeError: Cannot compare string"
+        BoolType -> error $ "RuntimeError: Cannot compare bool " ++ show pos
+        StringType -> error $ "RuntimeError: Cannot compare string " ++ show pos
 
 cBinOpExp :: Expr -> Int -> SymTable -> [SymTable] -> String
 cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
@@ -563,8 +552,8 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
       case cGetExprBaseType expr1 table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> error $ "RuntimeError: Cannot evaluate bool"
-        StringType -> error $ "RuntimeError: Cannot evaluate string"
+        BoolType -> error $ "RuntimeError: Cannot evaluate bool " ++ show pos
+        StringType -> error $ "RuntimeError: Cannot evaluate string " ++ show pos
 
 cUnaryMinus :: Expr -> Int -> SymTable -> [SymTable] -> String
 cUnaryMinus (UnaryMinus pos expr) reg table tables =
@@ -577,8 +566,8 @@ cUnaryMinus (UnaryMinus pos expr) reg table tables =
       case cGetExprBaseType expr table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> error $ "RuntimeError: Cannot unary minus bool"
-        StringType -> error $ "RuntimeError: Cannot unary minus string"
+        BoolType -> error $ "RuntimeError: Cannot unary minus bool " ++ show pos
+        StringType -> error $ "RuntimeError: Cannot unary minus string " ++ show pos
 
 cCheckTypeNum :: Expr -> SymTable -> [SymTable] -> String
 cCheckTypeNum expr table tables =
@@ -596,15 +585,15 @@ cConvertType expr1 expr2 reg table tables =
           indentation ++ "int_to_real " 
           ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
         IntType -> ""
-        otherwise -> error $ "RuntimeError: Type error"
+        otherwise -> error $ "RuntimeError: Type error, must be Int or Float type"
     FloatType -> 
       case cGetExprBaseType expr2 table tables of
         FloatType -> ""
         IntType ->
           indentation ++ "int_to_real " 
           ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-        otherwise -> error $ "RuntimeError: Type error"
-    otherwise -> error $ "RuntimeError: Type error"
+        otherwise -> error $ "RuntimeError: Type error, must be Int or Float type"
+    otherwise -> error $ "RuntimeError: Type error, must be Int or Float type"
 
 cExpr :: Expr -> Int -> SymTable -> [SymTable] -> String
 cExpr (BoolCon pos const) reg table tables = cBoolConst const reg

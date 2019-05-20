@@ -17,6 +17,8 @@ label_1:
     call_builtin print_int
     string_const r0, "\n"
     call_builtin print_string
+    int_const r0, 0
+    store 1, r0
 label_3:
     load r1, 1
     int_const r2, 5
@@ -24,6 +26,8 @@ label_3:
     branch_on_true r1, label_4
     branch_uncond label_5
 label_4:
+    string_const r0, "--"
+    call_builtin print_string
     load r0, 1
     call_builtin print_int
     string_const r0, "\n"

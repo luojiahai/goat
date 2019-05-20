@@ -5,7 +5,9 @@ begin
     while i < 5 do
         write i;
         write "\n";
+        j := 0;
         while j < 5 do
+            write "--";
             write j;
             write "\n";
             j := j + 1;
