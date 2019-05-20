@@ -8,6 +8,8 @@ proc_p:
     store 2, r0
     load r0, 2
     call_builtin print_int
+    string_const r0, "\n"
+    call_builtin print_string
     pop_stack_frame 3
     return
 proc_main:
@@ -44,14 +46,9 @@ proc_main:
     store_indirect r1, r0
     int_const r0, 0
     store 17, r0
-    load r0, 17
-    int_const r1, 1
-    cmp_lt_int r0, r0, r1
-    branch_on_true r0, label_0
-    branch_uncond label_1
-label_0:
-    string_const r0, "OK\n"
-    call_builtin print_string
-label_1:
+    int_const r0, 1
+    int_const r1, 2
+    int_to_real r1, r1
+    call proc_p
     pop_stack_frame 18
     return

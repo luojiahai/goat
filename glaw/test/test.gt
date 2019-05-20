@@ -2,6 +2,7 @@ proc p(val int x, ref float y)
     int d;
 begin
     write d;
+    write "\n";
     #if (x = 1) then
     #    write "KK";
     #    write "\n";
@@ -18,7 +19,5 @@ proc main()
 begin
     a[3,2] := 19;
     c := 0;
-    if (c < 1) then
-        write "OK\n";
-    fi
+    call p(1, 2);
 end
