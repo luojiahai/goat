@@ -39,24 +39,32 @@ codegen :: Program -> [SymTable] -> String
 codegen (Program procs) tables = 
   indentation ++ "call proc_main\n"
   ++ indentation ++ "halt"
-  ++ (cProcs procs tables)
+  ++ procsStr
+  where (_, procsStr) = cProcs procs 0 tables
 
-cProcs :: [Procedure] -> [SymTable] -> String
-cProcs [] _ = ""
-cProcs [proc] tables = cProc proc tables
-cProcs (proc:procs) tables = cProc proc tables ++ (cProcs procs tables)
+cProcs :: [Procedure] -> Int -> [SymTable] -> (Int, String)
+cProcs [] label _ = (label, "")
+cProcs [proc] label tables = 
+  let (label', str) = cProc proc label tables 
+  in (label', str)
+cProcs (proc:procs) label tables = 
+  let 
+    (label', str) = cProc proc label tables 
+    (label'', str') = cProcs procs label' tables
+  in (label'', str ++ str')
 
-cProc :: Procedure -> [SymTable] -> String
-cProc (Procedure pos ident prmts decls stmts) tables = 
+cProc :: Procedure -> Int -> [SymTable] -> (Int, String)
+cProc (Procedure pos ident prmts decls stmts) label tables = 
   case stLookupSymTable ident tables of
     Just table ->
-      "\nproc_" ++ ident ++ ":\n"
+      (label', "\nproc_" ++ ident ++ ":\n"
       ++ cStackFrame "push" table tables
       ++ cPrmts prmts 0 table tables
       ++ cDecls decls table tables
-      ++ cStmts stmts table tables
+      ++ stmtsStr
       ++ cStackFrame "pop" table tables
-      ++ indentation ++ "return"
+      ++ indentation ++ "return")
+      where (label', stmtsStr) = cStmts stmts label table tables
     Nothing -> error $ "RuntimeError: Procedure " ++ ident ++ " not found"
 
 cStackFrame :: String -> SymTable -> [SymTable] -> String
@@ -206,27 +214,30 @@ cBoolConst const reg =
     False -> show 0
   ++ "\n"
 
-cStmts :: [Stmt] -> SymTable -> [SymTable] -> String
-cStmts [] _ _ = ""
-cStmts [stmt] table tables = cStmt stmt table tables
-cStmts (stmt:stmts) table tables = 
-  cStmt stmt table tables ++ (cStmts stmts table tables)
+cStmts :: [Stmt] -> Int -> SymTable -> [SymTable] -> (Int, String)
+cStmts [] label _ _ = (label, "")
+cStmts [stmt] label table tables = cStmt stmt label table tables
+cStmts (stmt:stmts) label table tables = 
+  let 
+    (label', str) = cStmt stmt label table tables 
+    (label'', str') = cStmts stmts label' table tables
+  in (label'', str ++ str')
 
-cStmt :: Stmt -> SymTable -> [SymTable] -> String
-cStmt (Assign pos lvalue expr) table tables = 
-  cAssign (Assign pos lvalue expr) table tables
-cStmt (Read pos lvalue) table tables = 
-  cRead (Read pos lvalue) table tables
-cStmt (Write pos expr) table tables = 
-  cWrite (Write pos expr) table tables
-cStmt (ProcCall pos ident exprs) table tables = 
-  cProcCall (ProcCall pos ident exprs) table tables
-cStmt (If pos expr stmts) table tables = 
-  cIf (If pos expr stmts) table tables
-cStmt (IfElse pos expr stmts1 stmts2) table tables = 
-  cIfElse (IfElse pos expr stmts1 stmts2) table tables
-cStmt (While pos expr stmts) table tables = 
-  cWhile (While pos expr stmts) table tables
+cStmt :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
+cStmt (Assign pos lvalue expr) label table tables = 
+  (label, cAssign (Assign pos lvalue expr) table tables)
+cStmt (Read pos lvalue) label table tables = 
+  (label, cRead (Read pos lvalue) table tables)
+cStmt (Write pos expr) label table tables = 
+  (label, cWrite (Write pos expr) table tables)
+cStmt (ProcCall pos ident exprs) label table tables = 
+  (label, cProcCall (ProcCall pos ident exprs) table tables)
+cStmt (If pos expr stmts) label table tables = 
+  cIf (If pos expr stmts) label table tables
+cStmt (IfElse pos expr stmts1 stmts2) label table tables = 
+  cIfElse (IfElse pos expr stmts1 stmts2) label table tables
+cStmt (While pos expr stmts) label table tables = 
+  cWhile (While pos expr stmts) label table tables
 
 cAssign :: Stmt -> SymTable -> [SymTable] -> String
 cAssign (Assign pos lvalue expr) table tables =
@@ -262,36 +273,42 @@ cProcCall (ProcCall pos ident exprs) table tables =
   cProcArgs ident exprs 0 0 table tables
   ++ indentation ++ "call proc_" ++ ident ++ "\n"
 
-cIf :: Stmt -> SymTable -> [SymTable] -> String
-cIf (If pos expr stmts) table tables = 
-  cExpr expr 0 table tables
+cIf :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
+cIf (If pos expr stmts) label table tables = 
+  (label', cExpr expr 0 table tables
   ++ indentation ++ "branch_on_true "
-  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 0 ++ "\n"
-  ++ indentation ++ "branch_uncond " ++ "label_" ++ show 1 ++ "\n"
-  ++ "label_" ++ show 0 ++ ":\n" ++ (cStmts stmts table tables)
-  ++ "label_" ++ show 1 ++ ":\n"
+  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show label ++ "\n"
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show (label + 1) ++ "\n"
+  ++ "label_" ++ show label ++ ":\n" ++ stmtsStr
+  ++ "label_" ++ show (label + 1) ++ ":\n")
+  where (label', stmtsStr) = cStmts stmts (label + 2) table tables
 
-cIfElse :: Stmt -> SymTable -> [SymTable] -> String
-cIfElse (IfElse pos expr stmts1 stmts2) table tables = 
-  cExpr expr 0 table tables
+cIfElse :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
+cIfElse (IfElse pos expr stmts1 stmts2) label table tables = 
+  (label'', cExpr expr 0 table tables
   ++ indentation ++ "branch_on_true "
-  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 0 ++ "\n"
+  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show label ++ "\n"
   ++ indentation ++ "branch_on_false " 
-  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show 1 ++ "\n"
-  ++ "label_" ++ show 0 ++ ":\n" ++ (cStmts stmts1 table tables) ++ "\n"
-  ++ "label_" ++ show 1 ++ ":\n" ++ (cStmts stmts2 table tables) ++ "\n"
-  ++ "label_" ++ show 2 ++ ":\n"
+  ++ "r" ++ show 0 ++ ", " ++ "label_" ++ show (label + 1) ++ "\n"
+  ++ "label_" ++ show label ++ ":\n" ++ stmts1Str
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show (label + 2) ++ "\n"
+  ++ "label_" ++ show (label + 1) ++ ":\n" ++ stmts2Str
+  ++ "label_" ++ show (label + 2) ++ ":\n")
+  where 
+    (label', stmts1Str) = cStmts stmts1 (label + 3) table tables
+    (label'', stmts2Str) = cStmts stmts2 label' table tables
 
-cWhile :: Stmt -> SymTable -> [SymTable] -> String
-cWhile (While pos expr stmts) table tables = 
-  "label_" ++ show 0 ++ ":\n"
+cWhile :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
+cWhile (While pos expr stmts) label table tables = 
+  (label', "label_" ++ show label ++ ":\n"
   ++ (cExpr expr 1 table tables)
   ++ indentation ++ "branch_on_true "
-  ++ "r" ++ show 1 ++ ", " ++ "label_" ++ show 1 ++ "\n"
-  ++ indentation ++ "branch_uncond " ++ "label_" ++ show 2 ++ "\n"
-  ++ "label_" ++ show 1 ++ ":\n" ++ (cStmts stmts table tables)
-  ++ indentation ++ "branch_uncond " ++ "label_" ++ show 0 ++ "\n"
-  ++ "label_" ++ show 2 ++ ":\n"
+  ++ "r" ++ show 1 ++ ", " ++ "label_" ++ show (label + 1) ++ "\n"
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show (label + 2) ++ "\n"
+  ++ "label_" ++ show (label + 1) ++ ":\n" ++ stmtsStr
+  ++ indentation ++ "branch_uncond " ++ "label_" ++ show label ++ "\n"
+  ++ "label_" ++ show (label + 2)  ++ ":\n")
+  where (label', stmtsStr) = cStmts stmts (label + 3) table tables
 
 cGetLvalueIdent :: Lvalue -> String
 cGetLvalueIdent (LId pos ident) = ident
@@ -551,10 +568,10 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
 
 cUnaryMinus :: Expr -> Int -> SymTable -> [SymTable] -> String
 cUnaryMinus (UnaryMinus pos expr) reg table tables =
-  cCheckTypeNum expr table tables ++ (cExpr expr reg table tables)
+  cCheckTypeNum expr table tables 
+  ++ (cExpr expr reg table tables)
   ++ indentation ++ "neg_" ++ t ++ " "
-  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ ", " 
-  ++ "r" ++ show (reg + 1) ++ "\n"
+  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
   where 
     t = 
       case cGetExprBaseType expr table tables of

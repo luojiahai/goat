@@ -27,6 +27,7 @@ begin
     write "\n";
     write "x: ";
     write x;
+    write "\n";
 
     while (low <= high) do
         mid := (low + high)/2;

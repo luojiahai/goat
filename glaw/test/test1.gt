@@ -1,0 +1,15 @@
+proc main()
+    int i;
+    int j;
+begin
+    while i < 5 do
+        write i;
+        write "\n";
+        while j < 5 do
+            write j;
+            write "\n";
+            j := j + 1;
+        od
+        i := i + 1;
+    od
+end

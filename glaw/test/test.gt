@@ -4,23 +4,30 @@ begin
     y := 100.123;
     write y;
     write "\n";
-    #if (x = 1) then
-    #    write "KK";
-    #    write "\n";
-    #else
-    #    write "NOTKK";
-    #    write "\n";
-    #fi
+    if (x = 1) then
+        write "KK";
+        write "\n";
+    else
+        write "NOTKK";
+        write "\n";
+    fi
 end
 
 proc main()
     int a[4,4];
     bool b;
     int c;
+    int i;
+    int j;
     float d;
 begin
     a[3,2] := 19;
     c := 0;
     d := 2.3;
-    call p(1, d);
+    if (b) then
+        write "OKOK\n";
+    else
+        write "CALLING!!\n";
+        call p(1, d);
+    fi
 end

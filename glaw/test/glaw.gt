@@ -27,6 +27,7 @@ begin
     write "\n";
     write "x: ";
     write x;
+    write "\n";
 
     while (low <= high) do
         mid := (low + high)/2;
@@ -47,50 +48,6 @@ begin
     else
         write "x is not found\n";
     fi
-end
-
-proc bubble_sort()
-    int length;
-    int collection[3];
-    int i;
-    int j;
-    bool swapped;
-    int tmp;
-begin
-    length := 3;
-    collection[0] := 3;
-    collection[1] := 6;
-    collection[2] := 2;
-    write "unsorted: ";
-    write collection[0];
-    write collection[1];
-    write collection[2];
-    write "\n";
-
-    i := 0;
-    while i < (length - 1) do
-        swapped := false;
-        j := 0;
-        while j < ((length - 1) - i) do
-            if collection[j] > collection [j + 1] then
-                swapped := true;
-                tmp := collection[j];
-                collection[j] := collection [j + 1];
-                collection [j] := tmp;
-            fi
-            if !swapped then
-                j := length;
-            fi
-            j := j + 1;
-        od
-        i := i + 1;
-    od
-
-    write "sorted: ";
-    write collection[0];
-    write collection[1];
-    write collection[2];
-    write "\n";
 end
 
 proc factorial_recurse(val int num, ref int ret)
@@ -147,185 +104,6 @@ begin
     write num;
     write " is ";
     write ans;
-    write "\n";
-end
-
-proc insertion_sort()
-    int length;
-    int collection[3];
-    int i;
-    int tmp;
-begin
-    length := 3;
-    collection[0] := 3;
-    collection[1] := 6;
-    collection[2] := 2;
-    write "unsorted: ";
-    write collection[0];
-    write collection[1];
-    write collection[2];
-    write "\n";
-
-    i := 1;
-    while i < length do
-        while i > 0 && collection[i - 1] > collection[i] do
-            tmp := collection[i];
-            collection[i] := collection [i + 1];
-            collection [i] := tmp;
-            i := i - 1;
-        od
-        i := i + 1;
-    od
-
-    write "sorted: ";
-    write collection[0];
-    write collection[1];
-    write collection[2];
-    write "\n";
-end
-
-proc matrix_add()
-    int matrix_a[2, 2];
-    int matrix_b[2, 2];
-    int matrix_c[2, 2];
-    int n;
-    int i;
-    int j;
-    int value;
-begin
-    # matrix_a = [[12, 10], [3, 9]]
-    matrix_a[0, 0] := 12;
-    matrix_a[0, 1] := 10;
-    matrix_a[1, 0] := 3;
-    matrix_a[1, 1] := 9;
-    write "matrix_a = [[12, 10], [3, 9]]\n";
-
-    # matrix_b = [[3, 4], [7, 4]]
-    matrix_a[0, 0] := 3;
-    matrix_a[0, 1] := 4;
-    matrix_a[1, 0] := 7;
-    matrix_a[1, 1] := 4;
-    write "matrix_b = [[3, 4], [7, 4]]\n";
-
-    n := 2;
-    i := 0;
-    while (i < n) do
-        j := 0;
-        while (j < n) do
-            value := matrix_a[i, j] + matrix_b[i, j];
-            matrix_c[i, j] := value;
-            j := j + 1;
-        od
-        i := i + 1;
-    od
-
-    write "matrix_a + matrix_b = [";
-    write "[";
-    write matrix_c[0, 0];
-    write ", ";
-    write matrix_c[0, 1];
-    write "], [";
-    write matrix_c[1, 0];
-    write ", ";
-    write matrix_c[1, 1];
-    write "]]";
-end
-
-proc matrix_mul()
-    int matrix_a[2, 2];
-    int matrix_b[2, 2];
-    int matrix_c[2, 2];
-    int n;
-    int i;
-    int j;
-    int k;
-    int value;
-begin
-    # matrix_a = [[12, 10], [3, 9]]
-    matrix_a[0, 0] := 12;
-    matrix_a[0, 1] := 10;
-    matrix_a[1, 0] := 3;
-    matrix_a[1, 1] := 9;
-    write "matrix_a = [[12, 10], [3, 9]]\n";
-
-    # matrix_b = [[3, 4], [7, 4]]
-    matrix_a[0, 0] := 3;
-    matrix_a[0, 1] := 4;
-    matrix_a[1, 0] := 7;
-    matrix_a[1, 1] := 4;
-    write "matrix_b = [[3, 4], [7, 4]]\n";
-
-    n := 2;
-    i := 0;
-    while (i < n) do
-        j := 0;
-        while (j < n) do
-            value := 0;
-            k := 0;
-            while (k < n) do
-                value := value + matrix_a[i, k] * matrix_b[k, j];
-                k := k + 1;
-            od
-            matrix_c[i, j] := value;
-            j := j + 1;
-        od
-        i := i + 1;
-    od
-
-    write "matrix_a * matrix_b = [";
-    write "[";
-    write matrix_c[0, 0];
-    write ", ";
-    write matrix_c[0, 1];
-    write "], [";
-    write matrix_c[1, 0];
-    write ", ";
-    write matrix_c[1, 1];
-    write "]]";
-end
-
-proc multiply_recurse(val int a, val int b, ref int ret)
-    int c;
-begin
-    if (a = 0 || b = 0) then
-		ret := 0;
-    fi
-	if (b = 1) then
-		ret := a;
-    fi
-	if (a = 1) then
-		ret := b;
-    fi
-    c := 0;
-    call multiply_recurse(a, b - 1, c);
-    ret := a + c;
-end
-
-proc multiply()
-    int a;
-    int b;
-    int abs_b;
-    int ret;
-begin
-    a := 2;
-    b := 3;
-    ret := 0;
-    
-    abs_b := b;
-    if (b < 0) then
-        abs_b := -b;
-    fi
-    call multiply_recurse(a, abs_b, ret);
-
-    if (b < 0) then
-        ret := -ret;
-    fi
-    
-    write a;
-    write " multiply by ";
-    write b;
-    write " is ";
-    write ret;
     write "\n";
 end
 
@@ -404,27 +182,12 @@ begin
     write "binary_search:\n";
     call binary_search();
 
-    write "\nbubble_sort:\n";
-    call bubble_sort();
-
     write "\nfactorial:\n";
     call factorial();
 
     write "\nfibonacci:\n";
     call fibonacci();
-
-    write "\ninsertion_sort:\n";
-    call insertion_sort();
-
-    write "\nmatrix_add:\n";
-    call matrix_add();
-
-    write "\nmatrix_mul:\n";
-    call matrix_mul();
-
-    write "\nmultiply:(without operator and loops)\n";
-    call multiply();
-
+    
     write "\nselection_sort:\n";
     call selection_sort();
 
