@@ -379,7 +379,8 @@ cProcArg ident expr i reg table tables =
           Just table' -> stGetArgSymbol i table'
           Nothing -> error $ "InternalError: cProcArg"
   
-cProcArgVal :: Ident -> BaseType -> Expr -> Int -> SymTable -> [SymTable] -> String
+cProcArgVal :: Ident -> BaseType -> Expr -> Int 
+  -> SymTable -> [SymTable] -> String
 cProcArgVal ident baseType expr reg table tables =
   if (cGetExprBaseType expr table tables) == baseType 
   then cExpr expr reg table tables
@@ -395,7 +396,8 @@ cProcArgVal ident baseType expr reg table tables =
           error $ "RuntimeError: Type error"
       otherwise -> error $ "RuntimeError: Type error"
 
-cProcArgRef :: Ident -> BaseType -> Expr -> Int -> SymTable -> [SymTable] -> String
+cProcArgRef :: Ident -> BaseType -> Expr -> Int 
+  -> SymTable -> [SymTable] -> String
 cProcArgRef ident baseType expr reg table tables =
   if (cGetExprBaseType expr table tables) == baseType 
   then cExprAddr expr reg table tables
