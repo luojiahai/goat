@@ -228,6 +228,15 @@ cStmt (While pos expr stmts) label table tables =
 cAssign :: Stmt -> SymTable -> [SymTable] -> String
 cAssign (Assign pos lvalue expr) table tables =
   cExpr expr 0 table tables
+  ++
+  case cGetBaseType (cGetLvalueIdent lvalue) table tables of
+    FloatType -> 
+      case cGetExprBaseType expr table tables of
+        IntType -> 
+          indentation ++ "int_to_real " 
+          ++ "r" ++ show 0 ++ ", " ++ "r" ++ show 0 ++ "\n"
+        otherwise -> ""
+    otherwise -> ""
   ++ cLvalue lvalue 0 table tables
 
 cRead :: Stmt -> SymTable -> [SymTable] -> String
@@ -435,8 +444,10 @@ cId :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
 cId (Id pos ident) isLoadAddr reg table tables =
   indentation ++ 
   case isLoadAddr of
-    True -> "load_address "
-    False -> "load " 
+    True -> 
+      "load_address " 
+    False -> 
+      "load " 
   ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   ++
   case stLookupHashMap ident table of
@@ -458,11 +469,12 @@ cArrayRef (ArrayRef pos ident expr) isLoadAddr reg table tables =
   ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   ++ indentation ++ "sub_offset " ++ "r" ++ show reg ++ ", "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-  ++ indentation ++
+  ++
   case isLoadAddr of
-    True -> "load " 
-    False -> "load_indirect " 
-  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+    True -> ""
+    False ->
+      indentation ++ "load_indirect " 
+      ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
   where slot = cGetSlot ident table tables
 
 cMatrixRef :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
@@ -478,11 +490,12 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) isLoadAddr reg table tables =
   ++ "r" ++ show reg ++ ", " ++ show slot ++ "\n"
   ++ indentation ++ "sub_offset " ++ "r" ++ show reg ++ ", "
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-  ++ indentation ++
+  ++
   case isLoadAddr of
-    True -> "load " 
-    False -> "load_indirect " 
-  ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
+    True -> ""
+    False ->
+      indentation ++ "load_indirect " 
+      ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
   where 
     slot = cGetSlot ident table tables
     len = 
@@ -531,8 +544,7 @@ cRel (Rel pos relOp expr1 expr2) reg table tables =
       case cGetExprBaseType expr1 table tables of
         IntType -> "int"
         FloatType -> "real"
-        BoolType -> 
-          error $ "RuntimeError: Cannot compare bool " ++ show pos
+        BoolType -> "int"
         StringType -> 
           error $ "RuntimeError: Cannot compare string " ++ show pos
 
@@ -553,7 +565,14 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
         Op_div -> "div"
     t = 
       case cGetExprBaseType expr1 table tables of
-        IntType -> "int"
+        IntType -> 
+          case cGetExprBaseType expr2 table tables of
+            FloatType -> "real"
+            IntType -> "int"
+            BoolType -> 
+              error $ "RuntimeError: Cannot evaluate bool " ++ show pos
+            StringType -> 
+              error $ "RuntimeError: Cannot evaluate string " ++ show pos
         FloatType -> "real"
         BoolType -> 
           error $ "RuntimeError: Cannot evaluate bool " ++ show pos
@@ -585,25 +604,22 @@ cCheckTypeNum expr table tables =
   
 cConvertType :: Expr -> Expr -> Int -> SymTable -> [SymTable] -> String       
 cConvertType expr1 expr2 reg table tables =
-  case cGetExprBaseType expr1 table tables of
+  case cGetExprBaseType' expr1 table tables of
     IntType -> 
-      case cGetExprBaseType expr2 table tables of
+      case cGetExprBaseType' expr2 table tables of
         FloatType -> 
           indentation ++ "int_to_real " 
           ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
         IntType -> ""
-        otherwise -> 
-          error $ "RuntimeError: Type error, must be Int or Float type"
+        otherwise -> ""
     FloatType -> 
-      case cGetExprBaseType expr2 table tables of
+      case cGetExprBaseType' expr2 table tables of
         FloatType -> ""
         IntType ->
           indentation ++ "int_to_real " 
           ++ "r" ++ show (reg + 1) ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
-        otherwise -> 
-          error $ "RuntimeError: Type error, must be Int or Float type"
-    otherwise -> 
-      error $ "RuntimeError: Type error, must be Int or Float type"
+        otherwise -> ""
+    otherwise -> ""
 
 cExpr :: Expr -> Int -> SymTable -> [SymTable] -> String
 cExpr (BoolCon pos const) reg table tables = cBoolConst const reg
@@ -645,6 +661,31 @@ cGetExprBaseType (Or pos expr1 expr2) table tables = BoolType
 cGetExprBaseType (Not pos expr) table tables = BoolType
 cGetExprBaseType (Rel pos relOp expr1 expr2) table tables = BoolType
 cGetExprBaseType (BinOpExp pos binOp expr1 expr2) table tables = 
-  cGetExprBaseType expr1 table tables
+  case cGetExprBaseType expr1 table tables of
+    IntType ->
+      case cGetExprBaseType expr2 table tables of
+        FloatType -> cGetExprBaseType expr2 table tables
+        otherwise -> cGetExprBaseType expr1 table tables
+    otherwise -> cGetExprBaseType expr1 table tables
 cGetExprBaseType (UnaryMinus pos expr) table tables = 
   cGetExprBaseType expr table tables
+
+cGetExprBaseType' :: Expr -> SymTable -> [SymTable] -> BaseType
+cGetExprBaseType' (BoolCon pos const) table tables = BoolType
+cGetExprBaseType' (IntCon pos const) table tables = IntType
+cGetExprBaseType' (FloatCon pos const) table tables = FloatType
+cGetExprBaseType' (StrCon pos const) table tables = StringType
+cGetExprBaseType' (Id pos ident) table tables = 
+  cGetBaseType ident table tables
+cGetExprBaseType' (ArrayRef pos ident expr) table tables = 
+  cGetBaseType ident table tables
+cGetExprBaseType' (MatrixRef pos ident expr1 expr2) table tables = 
+  cGetBaseType ident table tables
+cGetExprBaseType' (And pos expr1 expr2) table tables = BoolType
+cGetExprBaseType' (Or pos expr1 expr2) table tables = BoolType
+cGetExprBaseType' (Not pos expr) table tables = BoolType
+cGetExprBaseType' (Rel pos relOp expr1 expr2) table tables = BoolType
+cGetExprBaseType' (BinOpExp pos binOp expr1 expr2) table tables = 
+  cGetExprBaseType' expr1 table tables
+cGetExprBaseType' (UnaryMinus pos expr) table tables = 
+  cGetExprBaseType' expr table tables
