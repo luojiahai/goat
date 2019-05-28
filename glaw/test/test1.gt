@@ -1,7 +1,9 @@
 proc main()
     int i;
     int j;
+    float a;
 begin
+    a := 1 + (2.5 + (2 + 4.5));
     while i < 5 do
         write i;
         write "\n";

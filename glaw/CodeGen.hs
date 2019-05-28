@@ -651,16 +651,16 @@ cCheckTypeNum expr table tables =
 -- convert type
 cConvertType :: Expr -> Expr -> Int -> SymTable -> [SymTable] -> String       
 cConvertType expr1 expr2 reg table tables =
-  case cGetExprBaseType' expr1 table tables of
+  case cGetExprBaseType expr1 table tables of
     IntType -> 
-      case cGetExprBaseType' expr2 table tables of
+      case cGetExprBaseType expr2 table tables of
         FloatType -> 
           indentation ++ "int_to_real " 
           ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
         IntType -> ""
         otherwise -> ""
     FloatType -> 
-      case cGetExprBaseType' expr2 table tables of
+      case cGetExprBaseType expr2 table tables of
         FloatType -> ""
         IntType ->
           indentation ++ "int_to_real " 
@@ -718,23 +718,3 @@ cGetExprBaseType (BinOpExp pos binOp expr1 expr2) table tables =
     otherwise -> cGetExprBaseType expr1 table tables
 cGetExprBaseType (UnaryMinus pos expr) table tables = 
   cGetExprBaseType expr table tables
-
-cGetExprBaseType' :: Expr -> SymTable -> [SymTable] -> BaseType
-cGetExprBaseType' (BoolCon pos const) table tables = BoolType
-cGetExprBaseType' (IntCon pos const) table tables = IntType
-cGetExprBaseType' (FloatCon pos const) table tables = FloatType
-cGetExprBaseType' (StrCon pos const) table tables = StringType
-cGetExprBaseType' (Id pos ident) table tables = 
-  cGetBaseType ident table tables
-cGetExprBaseType' (ArrayRef pos ident expr) table tables = 
-  cGetBaseType ident table tables
-cGetExprBaseType' (MatrixRef pos ident expr1 expr2) table tables = 
-  cGetBaseType ident table tables
-cGetExprBaseType' (And pos expr1 expr2) table tables = BoolType
-cGetExprBaseType' (Or pos expr1 expr2) table tables = BoolType
-cGetExprBaseType' (Not pos expr) table tables = BoolType
-cGetExprBaseType' (Rel pos relOp expr1 expr2) table tables = BoolType
-cGetExprBaseType' (BinOpExp pos binOp expr1 expr2) table tables = 
-  cGetExprBaseType' expr1 table tables
-cGetExprBaseType' (UnaryMinus pos expr) table tables = 
-  cGetExprBaseType' expr table tables

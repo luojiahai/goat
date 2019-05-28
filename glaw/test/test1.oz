@@ -1,11 +1,23 @@
     call proc_main
     halt
 proc_main:
-    push_stack_frame 2
+    push_stack_frame 3
     int_const r0, 0
     store 0, r0
     int_const r0, 0
     store 1, r0
+    real_const r0, 0.0
+    store 2, r0
+    int_const r0, 1
+    real_const r1, 2.5
+    int_const r2, 2
+    real_const r3, 4.5
+    int_to_real r2, r2
+    add_real r2, r2, r3
+    add_real r1, r1, r2
+    int_to_real r0, r0
+    add_real r0, r0, r1
+    store 2, r0
 label_0:
     load r1, 0
     int_const r2, 5
@@ -44,5 +56,5 @@ label_5:
     store 0, r0
     branch_uncond label_0
 label_2:
-    pop_stack_frame 2
+    pop_stack_frame 3
     return
