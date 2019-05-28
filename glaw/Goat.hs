@@ -28,14 +28,12 @@ main
       case task of
         Compile 
           -> do
-              --  putStrLn "Sorry, unable to generate code at this point"
                let [filename] = args
                input <- readFile filename
                let output = ast input
                case output of
                  Right tree -> do
                                  let tables = analyze tree
-                                --  putStrLn (show tables)
                                  let code = codegen tree tables
                                  putStrLn (code)
                  Left err -> do 

@@ -16,13 +16,15 @@ import GoatAST
 import SymTable
 
 
+-- analyze a goat program given symbol tables
 analyze :: Program -> [SymTable]
 analyze (Program procs) = 
   case aProcs procs tables of
     True -> tables
     False -> error $ "InternalError"
-  where tables = symTable procs
+  where tables = symTable (Program procs)
 
+-- validate main procedure
 aCheckMain :: [SymTable] -> Bool
 aCheckMain tables =
   case stMainSymTable tables of
@@ -32,30 +34,35 @@ aCheckMain tables =
         False -> error $ "SemanticError: Main procedure surplus arguments"
     Nothing -> error $ "SemanticError: Main procedure not found"
 
+-- validate procedures, check duplicate procedures
 aCheckDuplicateProc :: [SymTable] -> Bool
 aCheckDuplicateProc tables = 
   case stDuplicate [] tables of
     False -> True
     True -> error $ "SemanticError: Duplicate procedures"
 
+-- analyze a sequence of procedures
 aProcs :: [Procedure] -> [SymTable] -> Bool
 aProcs [] tables = True
 aProcs [proc] tables = 
   (aProc proc tables) && (aCheckMain tables) && (aCheckDuplicateProc tables)
 aProcs (proc:procs) tables = (aProc proc tables) && (aProcs procs tables)
 
+-- analyze a procedure
 aProc :: Procedure -> [SymTable] -> Bool
 aProc (Procedure pos ident prmts decls stmts) tables = 
   case stLookupSymTable ident tables of
     Just table -> aStmts stmts tables table
     Nothing -> error $ "SemanticError: Undefined procedure " ++ ident
 
+-- analyze a sequence of statements
 aStmts :: [Stmt] -> [SymTable] -> SymTable -> Bool
 aStmts [] _ table = True
 aStmts [stmt] tables table = aStmt stmt tables table
 aStmts (stmt:stmts) tables table = 
   (aStmt stmt tables table) && (aStmts stmts tables table)
 
+-- analyze a statement
 aStmt :: Stmt -> [SymTable] -> SymTable -> Bool
 aStmt (Assign pos lvalue expr) tables table = 
   (aLvalue lvalue tables table) && (aExpr expr tables table)
@@ -73,12 +80,14 @@ aStmt (IfElse pos expr stmts1 stmts2) tables table =
 aStmt (While pos expr stmts) tables table = 
   (aExpr expr tables table) && (aStmts stmts tables table)
 
+-- analyze a sequence of expressions
 aExprs :: [Expr] -> [SymTable] -> SymTable -> Bool
 aExprs [] _ table = True
 aExprs [expr] tables table = aExpr expr tables table
 aExprs (expr:exprs) tables table = 
   (aExpr expr tables table) && (aExprs exprs tables table)
 
+-- analyze an expression
 aExpr :: Expr -> [SymTable] -> SymTable -> Bool
 aExpr (BoolCon pos const) tables table = True
 aExpr (And pos expr1 expr2) tables table = True
@@ -94,6 +103,7 @@ aExpr (MatrixRef pos ident expr1 expr2) tables table = True
 aExpr (BinOpExp pos binOp expr1 expr2) tables table = True
 aExpr (UnaryMinus pos expr) tables table = True
 
+-- analyze lvalue
 aLvalue :: Lvalue -> [SymTable] -> SymTable -> Bool
 aLvalue (LId pos ident) tables table = aIdBase ident tables table
 aLvalue (LArrayRef pos ident expr) tables table = 
@@ -101,6 +111,7 @@ aLvalue (LArrayRef pos ident expr) tables table =
 aLvalue (LMatrixRef pos ident expr1 expr2) tables table = 
   aIdMatrix ident tables table
 
+-- analyze base id
 aIdBase :: Ident -> [SymTable] -> SymTable -> Bool
 aIdBase ident tables table =
   case stLookupHashMap ident table of
@@ -114,6 +125,7 @@ aIdBase ident tables table =
         Nothing -> error $ "InternalError: No AGoatType"
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
+-- analyze array id
 aIdArray :: Ident -> [SymTable] -> SymTable -> Bool
 aIdArray ident tables table =
   case stLookupHashMap ident table of
@@ -127,6 +139,7 @@ aIdArray ident tables table =
         Nothing -> error $ "InternalError: No AGoatType"
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
+-- analyze matrix id
 aIdMatrix :: Ident -> [SymTable] -> SymTable -> Bool
 aIdMatrix ident tables table =
   case stLookupHashMap ident table of
@@ -140,6 +153,7 @@ aIdMatrix ident tables table =
         Nothing -> error $ "InternalError: No AGoatType"
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
   
+-- analyze procedure call
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> Bool
 aCall ident exprs tables table = 
   case stLookupSymTable ident tables of

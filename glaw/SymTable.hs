@@ -31,14 +31,17 @@ data Attribute =
   deriving (Show, Eq)
 
 
-symTable :: [Procedure] -> [SymTable]
-symTable procs = stProcs procs
+-- generate symbol tables given a goat program
+symTable :: Program -> [SymTable]
+symTable (Program procs) = stProcs procs
 
+-- get hashmap size
 stHashMapSize :: HashMap -> Int
 stHashMapSize hashMap = 
   let f symbol len = len + (stSymbolSize symbol)
   in foldr f 0 hashMap
 
+-- get variable size
 stSymbolSize :: Symbol -> Int
 stSymbolSize symbol = 
   case stAGoatType symbol of
@@ -47,11 +50,13 @@ stSymbolSize symbol =
     Just (AGoatType (Matrix baseType i j)) -> i * j
     Nothing -> error $ "InternalError: No AGoatType"
 
+-- check duplication of symbol table
 stDuplicate :: [SymTable] -> [SymTable] -> Bool
 stDuplicate seen [] = False
 stDuplicate seen (x:xs) = 
   stElem x seen || stDuplicate (x:seen) xs
 
+-- check if one symbol table is in symbol tables
 stElem :: SymTable -> [SymTable] -> Bool
 stElem _ [] = False
 stElem (SymTable header _ _) [(SymTable header' _ _)] =
@@ -60,6 +65,7 @@ stElem (SymTable header prmts hashMap) ((SymTable header' _ _):tables) =
   if header == header' then True 
   else stElem (SymTable header prmts hashMap) tables
 
+-- get main symbol table
 stMainSymTable :: [SymTable] -> Maybe SymTable
 stMainSymTable [] = Nothing
 stMainSymTable [(SymTable header prmts hashMap)] = 
@@ -69,6 +75,7 @@ stMainSymTable ((SymTable header prmts hashMap):tables) =
   if header == "main" then Just (SymTable header prmts hashMap)
   else stMainSymTable tables
 
+-- get type attribute given symbol
 stAType :: Symbol -> Maybe Attribute
 stAType [] = Nothing
 stAType [attr] = 
@@ -80,6 +87,7 @@ stAType (attr:attrs) =
     (AType baseType) -> Just (AType baseType)
     otherwise -> stAType attrs
 
+-- get slot number attribute given symbol
 stASlot :: Symbol -> Maybe Attribute
 stASlot [] = Nothing
 stASlot [attr] = 
@@ -91,6 +99,7 @@ stASlot (attr:attrs) =
     (ASlot slot) -> Just (ASlot slot)
     otherwise -> stASlot attrs
 
+-- get goat type attribute given symbol
 stAGoatType :: Symbol -> Maybe Attribute
 stAGoatType [] = Nothing
 stAGoatType [attr] = 
@@ -102,6 +111,7 @@ stAGoatType (attr:attrs) =
     (AGoatType goatType) -> Just (AGoatType goatType)
     otherwise -> stAGoatType attrs
 
+-- get parmode attribute given symbol
 stAParMode :: Symbol -> Maybe Attribute
 stAParMode [] = Nothing
 stAParMode [attr] = 
@@ -113,6 +123,7 @@ stAParMode (attr:attrs) =
     (AParMode parMode) -> Just (AParMode parMode)
     otherwise -> stAParMode attrs
 
+-- get argument index attribute given symbol
 stAArgIndex :: Symbol -> Maybe Attribute
 stAArgIndex [] = Nothing
 stAArgIndex [attr] = 
@@ -124,6 +135,7 @@ stAArgIndex (attr:attrs) =
     (AArgIndex argIndex) -> Just (AArgIndex argIndex)
     otherwise -> stAArgIndex attrs
 
+-- get symbol given argument index
 stGetArgSymbol :: Int -> SymTable -> Symbol
 stGetArgSymbol i (SymTable header prmts hashMap) =
   stGetArgSymbol' i (Data.Map.toList hashMap)
@@ -141,16 +153,19 @@ stGetArgSymbol' i ((k, symbol):pairs) =
       if argIndex == i then symbol else stGetArgSymbol' i pairs
     Nothing -> stGetArgSymbol' i pairs
 
+-- bind key value pair into hashmap
 stBind :: String -> Symbol -> HashMap -> HashMap
 stBind key value hashMap =
   case Data.Map.lookup key hashMap of 
     Just value -> error $ "SemanticError: Duplicate variable " ++ key
     Nothing -> let hashMap' = Data.Map.insert key value hashMap in hashMap'
 
+-- lookup hashmap
 stLookupHashMap :: String -> SymTable -> Maybe Symbol
 stLookupHashMap key (SymTable header prmts hashMap) = 
   Data.Map.lookup key hashMap
 
+-- lookup symbol table
 stLookupSymTable :: String -> [SymTable] -> Maybe SymTable
 stLookupSymTable ident [] = Nothing
 stLookupSymTable ident [(SymTable header prmts hashMap)] = 
@@ -160,23 +175,27 @@ stLookupSymTable ident ((SymTable header prmts hashMap):tables) =
   if ident == header then Just (SymTable header prmts hashMap)
   else stLookupSymTable ident tables 
 
+-- get symbol tables given a sequence of procedures
 stProcs :: [Procedure] -> [SymTable]
 stProcs [] = []
 stProcs [proc] = [stProc proc]
 stProcs (proc:procs) = stProc proc : (stProcs procs)
 
+-- get symbol table given a procedure
 stProc :: Procedure -> SymTable
 stProc (Procedure pos ident prmts decls stmts) = 
   let hashMap = (stPrmts prmts 0 0 . stDecls decls (length prmts)) emptyHashMap
   in SymTable ident prmts hashMap
   where emptyHashMap = Data.Map.fromList([])
 
+-- get hashmap given a sequence of parameters
 stPrmts :: [FormalArgSpec] -> Int -> Int -> HashMap -> HashMap
 stPrmts [] _ _ hashMap = hashMap
 stPrmts [prmt] i slot hashMap = stPrmt prmt i slot hashMap
 stPrmts (prmt:prmts) i slot hashMap = 
   (stPrmt prmt i slot . stPrmts prmts (i + 1) (slot + 1)) hashMap
 
+-- get hashmap given a parameter while binding the parameter
 stPrmt :: FormalArgSpec -> Int -> Int -> HashMap -> HashMap
 stPrmt (FormalArgSpec pos parMode baseType ident) i slot hashMap = 
   let newHashMap = stBind ident symbol hashMap
@@ -185,6 +204,7 @@ stPrmt (FormalArgSpec pos parMode baseType ident) i slot hashMap =
                   AParMode parMode, AArgIndex i,
                   AType baseType, AGoatType (Base baseType)]
 
+-- get hashmap given a sequence of declarations
 stDecls :: [Decl] -> Int -> HashMap -> HashMap
 stDecls [] _ hashMap = hashMap
 stDecls [decl] slot hashMap = stDecl decl slot hashMap
@@ -197,6 +217,7 @@ stDecls (decl:decls) slot hashMap =
         (Decl pos ident (Array baseType i)) -> i
         (Decl pos ident (Matrix baseType i j)) -> (i * j)
 
+-- get hashmap given a declaration while binding the declaration
 stDecl :: Decl -> Int -> HashMap -> HashMap
 stDecl (Decl pos ident (Base baseType)) slot hashMap =
   let newHashMap = stBind ident symbol hashMap

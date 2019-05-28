@@ -19,6 +19,7 @@ import Control.Monad.State
 indentation = "    "
 
 
+-- generate oz code of a goat program
 codegen :: Program -> [SymTable] -> String
 codegen (Program procs) tables = 
   indentation ++ "call proc_main\n"
@@ -26,6 +27,7 @@ codegen (Program procs) tables =
   ++ procsStr
   where (_, procsStr) = cProcs procs 0 tables
 
+-- generate oz code of a sequence of procedures
 cProcs :: [Procedure] -> Int -> [SymTable] -> (Int, String)
 cProcs [] label _ = (label, "")
 cProcs [proc] label tables = 
@@ -37,6 +39,7 @@ cProcs (proc:procs) label tables =
     (label'', str') = cProcs procs label' tables
   in (label'', str ++ str')
 
+-- generate oz code of a procedure
 cProc :: Procedure -> Int -> [SymTable] -> (Int, String)
 cProc (Procedure pos ident prmts decls stmts) label tables = 
   case stLookupSymTable ident tables of
@@ -53,17 +56,20 @@ cProc (Procedure pos ident prmts decls stmts) label tables =
       error $ "RuntimeError: Procedure " 
       ++ ident ++ " not found " ++ show pos
 
+-- generate oz code of push/pull stack frame
 cStackFrame :: String -> SymTable -> [SymTable] -> String
 cStackFrame command (SymTable header prmts hashMap) tables = 
   indentation ++ command ++ "_stack_frame" ++ " " 
   ++ show (stHashMapSize hashMap) ++ "\n"
 
+-- generate oz code of a sequence of parameters
 cPrmts :: [FormalArgSpec] -> Int -> SymTable -> [SymTable] -> String
 cPrmts [] _ _ _ = ""
 cPrmts [prmt] reg table tables = cPrmt prmt reg table tables
 cPrmts (prmt:prmts) reg table tables = 
   cPrmt prmt reg table tables ++ cPrmts prmts (reg + 1) table tables
 
+-- generate oz code of a parameter
 cPrmt :: FormalArgSpec -> Int -> SymTable -> [SymTable] -> String
 cPrmt (FormalArgSpec pos parMode baseType ident) reg table tables =
   case baseType of
@@ -80,12 +86,14 @@ cPrmt (FormalArgSpec pos parMode baseType ident) reg table tables =
       ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
       where slot = cGetSlot ident table tables
 
+-- generate oz code of a sequence of declarations
 cDecls :: [Decl] -> SymTable -> [SymTable] -> String
 cDecls [] _ _ = ""
 cDecls [decl] table tables = cDecl decl table tables
 cDecls (decl:decls) table tables = 
   cDecl decl table tables ++ cDecls decls table tables
 
+-- generate oz code of a declaration
 cDecl :: Decl -> SymTable -> [SymTable] -> String
 cDecl (Decl pos ident (Base baseType)) table tables =
   cInitBase (Decl pos ident (Base baseType)) table tables
@@ -94,6 +102,7 @@ cDecl (Decl pos ident (Array baseType i)) table tables =
 cDecl (Decl pos ident (Matrix baseType i j)) table tables = 
   cInitMatrix (Decl pos ident (Matrix baseType i j)) table tables
     
+-- generate oz code of initialization of base id
 cInitBase :: Decl -> SymTable -> [SymTable] -> String
 cInitBase (Decl pos ident (Base baseType)) table tables =
   case baseType of
@@ -110,6 +119,7 @@ cInitBase (Decl pos ident (Base baseType)) table tables =
       ++ cStore slot 0 1
       where slot = cGetSlot ident table tables
 
+-- generate oz code of initialization of array id
 cInitArray :: Decl -> SymTable -> [SymTable] -> String
 cInitArray (Decl pos ident (Array baseType i)) table tables =
   case baseType of
@@ -126,6 +136,7 @@ cInitArray (Decl pos ident (Array baseType i)) table tables =
       ++ cStore slot 0 i
       where slot = cGetSlot ident table tables
 
+-- generate oz code of initialization of matrix id
 cInitMatrix :: Decl -> SymTable -> [SymTable] -> String
 cInitMatrix (Decl pos ident (Matrix baseType i j)) table tables =
   case baseType of
@@ -142,6 +153,7 @@ cInitMatrix (Decl pos ident (Matrix baseType i j)) table tables =
       ++ cStore slot 0 (i * j)
       where slot = cGetSlot ident table tables
 
+-- generate oz code of store action
 cStore :: Int -> Int -> Int -> String
 cStore slot reg 0 = ""
 cStore slot reg n = 
@@ -149,6 +161,7 @@ cStore slot reg n =
   ++ show slot ++ ", " ++ "r" ++ show reg ++ "\n"
   ++ cStore (slot + 1) reg (n - 1)
 
+-- get slot number given an id
 cGetSlot :: Ident -> SymTable -> [SymTable] -> Int
 cGetSlot ident table tables =
   case stLookupHashMap ident table of
@@ -158,6 +171,7 @@ cGetSlot ident table tables =
         Nothing -> error $ "InternalError: cGetSlot"
     Nothing -> error $ "InternalError: cGetSlot " ++ ident
 
+-- get base type given an id
 cGetBaseType :: Ident -> SymTable -> [SymTable] -> BaseType
 cGetBaseType ident table tables =
   case stLookupHashMap ident table of
@@ -167,6 +181,7 @@ cGetBaseType ident table tables =
         Nothing -> error $ "InternalError: cGetBaseType"
     Nothing -> error $ "InternalError: cGetBaseType " ++ ident
 
+-- get goat type given an id
 cGetGoatType :: Ident -> SymTable -> [SymTable] -> GoatType
 cGetGoatType ident table tables =
   case stLookupHashMap ident table of
@@ -176,21 +191,25 @@ cGetGoatType ident table tables =
         Nothing -> error $ "InternalError: cGetGoatType"
     Nothing -> error $ "InternalError: cGetGoatType " ++ ident
 
+-- generate oz code of int constant
 cIntConst :: Int -> Int -> String
 cIntConst const reg = 
   indentation ++ "int_const " ++ "r" ++ show reg
   ++ ", " ++ show const ++ "\n"
 
+-- generate oz code of float constant
 cFloatConst :: Float -> Int -> String
 cFloatConst const reg = 
   indentation ++ "real_const " ++ "r" ++ show reg
   ++ ", " ++ show const ++ "\n"
 
+-- generate oz code of string constant
 cStringConst :: String -> Int -> String
 cStringConst const reg = 
   indentation ++ "string_const " ++ "r" ++ show reg
   ++ ", " ++ ('\"' : (const ++ "\"")) ++ "\n"
 
+-- generate oz code of bool constant
 cBoolConst :: Bool -> Int -> String
 cBoolConst const reg = 
   indentation ++ "int_const " ++ "r" ++ show reg 
@@ -200,6 +219,7 @@ cBoolConst const reg =
     False -> show 0
   ++ "\n"
 
+-- generate oz code of a sequence of statements
 cStmts :: [Stmt] -> Int -> SymTable -> [SymTable] -> (Int, String)
 cStmts [] label _ _ = (label, "")
 cStmts [stmt] label table tables = cStmt stmt label table tables
@@ -209,6 +229,7 @@ cStmts (stmt:stmts) label table tables =
     (label'', str') = cStmts stmts label' table tables
   in (label'', str ++ str')
 
+-- generate oz code of a statement
 cStmt :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
 cStmt (Assign pos lvalue expr) label table tables = 
   (label, cAssign (Assign pos lvalue expr) table tables)
@@ -225,6 +246,7 @@ cStmt (IfElse pos expr stmts1 stmts2) label table tables =
 cStmt (While pos expr stmts) label table tables = 
   cWhile (While pos expr stmts) label table tables
 
+-- generate oz code of assignment statement
 cAssign :: Stmt -> SymTable -> [SymTable] -> String
 cAssign (Assign pos lvalue expr) table tables =
   cExpr expr 0 table tables
@@ -239,6 +261,7 @@ cAssign (Assign pos lvalue expr) table tables =
     otherwise -> ""
   ++ cLvalue lvalue 0 table tables
 
+-- generate oz code of read statement
 cRead :: Stmt -> SymTable -> [SymTable] -> String
 cRead (Read pos lvalue) table tables = 
   cCallBuiltin ("read_" ++ t) table tables
@@ -252,6 +275,7 @@ cRead (Read pos lvalue) table tables =
         StringType -> 
           error $ "RuntimeError: Cannot read string " ++ show pos
 
+-- generate oz code of write statement
 cWrite :: Stmt -> SymTable -> [SymTable] -> String
 cWrite (Write pos expr) table tables = 
   cExpr expr 0 table tables
@@ -264,11 +288,13 @@ cWrite (Write pos expr) table tables =
         BoolType -> "bool"
         StringType -> "string"
 
+-- generate oz code of procedure call statement
 cProcCall :: Stmt -> SymTable -> [SymTable] -> String
 cProcCall (ProcCall pos ident exprs) table tables = 
   cProcArgs ident exprs 0 0 table tables
   ++ indentation ++ "call proc_" ++ ident ++ "\n"
 
+-- generate oz code of if statement
 cIf :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
 cIf (If pos expr stmts) label table tables = 
   (label', cExpr expr 0 table tables
@@ -279,6 +305,7 @@ cIf (If pos expr stmts) label table tables =
   ++ "label_" ++ show (label + 1) ++ ":\n")
   where (label', stmtsStr) = cStmts stmts (label + 2) table tables
 
+-- generate oz code of if-else statement
 cIfElse :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
 cIfElse (IfElse pos expr stmts1 stmts2) label table tables = 
   (label'', cExpr expr 0 table tables
@@ -294,6 +321,7 @@ cIfElse (IfElse pos expr stmts1 stmts2) label table tables =
     (label', stmts1Str) = cStmts stmts1 (label + 3) table tables
     (label'', stmts2Str) = cStmts stmts2 label' table tables
 
+-- generate oz code of while statement
 cWhile :: Stmt -> Int -> SymTable -> [SymTable] -> (Int, String)
 cWhile (While pos expr stmts) label table tables = 
   (label', "label_" ++ show label ++ ":\n"
@@ -306,11 +334,13 @@ cWhile (While pos expr stmts) label table tables =
   ++ "label_" ++ show (label + 2)  ++ ":\n")
   where (label', stmtsStr) = cStmts stmts (label + 3) table tables
 
+-- get identifier name of lvalue
 cGetLvalueIdent :: Lvalue -> String
 cGetLvalueIdent (LId pos ident) = ident
 cGetLvalueIdent (LArrayRef pos ident expr) = ident
 cGetLvalueIdent (LMatrixRef pos ident expr1 expr2) = ident
 
+-- generate oz code of storing lvalue
 cLvalue :: Lvalue -> Int -> SymTable -> [SymTable] -> String
 cLvalue (LId pos ident) reg table tables = 
   case stLookupHashMap ident table of
@@ -360,10 +390,12 @@ cLvalue (LMatrixRef pos ident expr1 expr2) reg table tables =
         (Matrix baseType i j) -> i
         otherwise -> error $ "InternalError: cLvalue " ++ show pos
 
+-- generate oz code of builtin function call
 cCallBuiltin :: Ident -> SymTable -> [SymTable] -> String
 cCallBuiltin ident table tables = 
   indentation ++ "call_builtin " ++ ident ++ "\n"
 
+-- generate oz code of a sequence of procedure arguments
 cProcArgs :: Ident -> [Expr] -> Int -> Int 
   -> SymTable -> [SymTable] -> String
 cProcArgs _ [] _ _ _ _ = ""
@@ -373,6 +405,7 @@ cProcArgs ident (expr:exprs) i reg table tables =
   cProcArg ident expr i reg table tables 
   ++ cProcArgs ident exprs (i + 1) (reg + 1) table tables
 
+-- generate oz code of a procedure argument
 cProcArg :: Ident -> Expr -> Int -> Int 
   -> SymTable -> [SymTable] -> String
 cProcArg ident expr i reg table tables = 
@@ -396,6 +429,7 @@ cProcArg ident expr i reg table tables =
           Just table' -> stGetArgSymbol i table'
           Nothing -> error $ "InternalError: cProcArg"
   
+-- generate oz code of a procedure argument with parmode val
 cProcArgVal :: Ident -> BaseType -> Expr -> Int 
   -> SymTable -> [SymTable] -> String
 cProcArgVal ident baseType expr reg table tables =
@@ -413,6 +447,7 @@ cProcArgVal ident baseType expr reg table tables =
           error $ "RuntimeError: Type error"
       otherwise -> error $ "RuntimeError: Type error"
 
+-- generate oz code of a procedure argument with parmode ref
 cProcArgRef :: Ident -> BaseType -> Expr -> Int 
   -> SymTable -> [SymTable] -> String
 cProcArgRef ident baseType expr reg table tables =
@@ -430,6 +465,7 @@ cProcArgRef ident baseType expr reg table tables =
           error $ "RuntimeError: Type error"
       otherwise -> error $ "RuntimeError: Type error"
 
+-- generate oz code of an expression as ref
 cExprAddr :: Expr -> Int -> SymTable -> [SymTable] -> String
 cExprAddr (Id pos ident) reg table tables = 
   cId (Id pos ident) True reg table tables
@@ -440,6 +476,7 @@ cExprAddr (MatrixRef pos ident expr1 expr2) reg table tables =
 cExprAddr _ _ _ _ = 
   error $ "RuntimeError: Ref must be Id/ArrayRef/MatrixRef"
 
+-- generate oz code of loading id
 cId :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
 cId (Id pos ident) isLoadAddr reg table tables =
   indentation ++ 
@@ -462,6 +499,7 @@ cId (Id pos ident) isLoadAddr reg table tables =
       error $ "InternalError: cId " ++ ident ++ " " ++ show pos
   where slot = cGetSlot ident table tables
 
+-- generate oz code of loading array reference
 cArrayRef :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
 cArrayRef (ArrayRef pos ident expr) isLoadAddr reg table tables =
   cExpr expr (reg + 1) table tables
@@ -477,6 +515,7 @@ cArrayRef (ArrayRef pos ident expr) isLoadAddr reg table tables =
       ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
   where slot = cGetSlot ident table tables
 
+-- generate oz code of loading matrix reference
 cMatrixRef :: Expr -> Bool -> Int -> SymTable -> [SymTable] -> String
 cMatrixRef (MatrixRef pos ident expr1 expr2) isLoadAddr reg table tables = 
   cExpr expr1 (reg + 1) table tables ++ cExpr expr2 (reg + 2) table tables
@@ -503,6 +542,7 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) isLoadAddr reg table tables =
         (Matrix baseType i j) -> i
         otherwise -> error $ "InternalError: cMatrixRef " ++ show pos
 
+-- generate oz code of and expression
 cAnd :: Expr -> Int -> SymTable -> [SymTable] -> String
 cAnd (And pos expr1 expr2) reg table tables =
   cExpr expr1 reg table tables
@@ -510,6 +550,7 @@ cAnd (And pos expr1 expr2) reg table tables =
   ++ indentation ++ "and " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
 
+-- generate oz code of or expression
 cOr :: Expr -> Int -> SymTable -> [SymTable] -> String
 cOr (Or pos expr1 expr2) reg table tables =
   cExpr expr1 reg table tables
@@ -517,12 +558,14 @@ cOr (Or pos expr1 expr2) reg table tables =
   ++ indentation ++ "or " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show reg ++ ", " ++ "r" ++ show (reg + 1) ++ "\n"
 
+-- generate oz code of not expression
 cNot :: Expr -> Int -> SymTable -> [SymTable] -> String
 cNot (Not pos expr) reg table tables =
   cExpr expr reg table tables
   ++ indentation ++ "not " ++ "r" ++ show reg ++ ", " 
   ++ "r" ++ show reg ++ "\n"
 
+-- generate oz code of rel expression
 cRel :: Expr -> Int -> SymTable -> [SymTable] -> String
 cRel (Rel pos relOp expr1 expr2) reg table tables =
   cExpr expr1 reg table tables
@@ -548,6 +591,7 @@ cRel (Rel pos relOp expr1 expr2) reg table tables =
         StringType -> 
           error $ "RuntimeError: Cannot compare string " ++ show pos
 
+-- generate oz code of binary operation expression
 cBinOpExp :: Expr -> Int -> SymTable -> [SymTable] -> String
 cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
   cCheckTypeNum expr1 table tables 
@@ -579,6 +623,7 @@ cBinOpExp (BinOpExp pos binOp expr1 expr2) reg table tables =
         StringType -> 
           error $ "RuntimeError: Cannot evaluate string " ++ show pos
 
+-- generate oz code of unary minus expression
 cUnaryMinus :: Expr -> Int -> SymTable -> [SymTable] -> String
 cUnaryMinus (UnaryMinus pos expr) reg table tables =
   cCheckTypeNum expr table tables 
@@ -595,6 +640,7 @@ cUnaryMinus (UnaryMinus pos expr) reg table tables =
         StringType -> 
           error $ "RuntimeError: Cannot unary minus string " ++ show pos
 
+-- check if num type
 cCheckTypeNum :: Expr -> SymTable -> [SymTable] -> String
 cCheckTypeNum expr table tables =
   case cGetExprBaseType expr table tables of
@@ -602,6 +648,7 @@ cCheckTypeNum expr table tables =
     FloatType -> ""
     otherwise -> error $ "RuntimeError: Type error"
   
+-- convert type
 cConvertType :: Expr -> Expr -> Int -> SymTable -> [SymTable] -> String       
 cConvertType expr1 expr2 reg table tables =
   case cGetExprBaseType' expr1 table tables of
@@ -621,6 +668,7 @@ cConvertType expr1 expr2 reg table tables =
         otherwise -> ""
     otherwise -> ""
 
+-- generate oz code of an expression
 cExpr :: Expr -> Int -> SymTable -> [SymTable] -> String
 cExpr (BoolCon pos const) reg table tables = cBoolConst const reg
 cExpr (IntCon pos const) reg table tables = cIntConst const reg
@@ -645,6 +693,7 @@ cExpr (BinOpExp pos binOp expr1 expr2) reg table tables =
 cExpr (UnaryMinus pos expr) reg table tables = 
   cUnaryMinus (UnaryMinus pos expr) reg table tables
 
+-- get base type of an expression
 cGetExprBaseType :: Expr -> SymTable -> [SymTable] -> BaseType
 cGetExprBaseType (BoolCon pos const) table tables = BoolType
 cGetExprBaseType (IntCon pos const) table tables = IntType
