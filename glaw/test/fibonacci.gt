@@ -1,0 +1,38 @@
+proc fibonacci_recurse(val int num, ref int ret)
+    int ret1;
+    int ret2;
+begin
+    if num = 0 then
+        ret := 0;
+    else 
+        if num = 1 then
+            ret := 1;
+        else 
+            ret1 := 0;
+            call fibonacci_recurse(num-1, ret1);
+            ret2 := 0;
+            call fibonacci_recurse(num-2, ret2);
+            ret := ret1 + ret2;
+        fi
+    fi
+end
+
+proc fibonacci()
+    int num;
+    int ans;
+begin
+    num := 8;
+    ans := 0;
+    call fibonacci_recurse(num, ans);
+    write "fibonacci of ";
+    write num;
+    write " is ";
+    write ans;
+    write "\n";
+end
+
+proc main()
+begin
+    write "Hello, this is a fibonacci.\n";
+    call fibonacci();
+end

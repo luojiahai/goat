@@ -1,0 +1,57 @@
+proc binary_search()
+    int collection[5];
+    int length;
+    int x;
+    int low;
+    int high;
+    int mid;
+    bool flag;
+begin
+    collection[0] := 1;
+    collection[1] := 2;
+    collection[2] := 3;
+    collection[3] := 4;
+    collection[4] := 5;
+    length := 5;
+    x := 3;
+    low := 0;
+    high := length - 1;
+    flag := false;
+
+    write "collection: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write collection[3];
+    write collection[4];
+    write "\n";
+    write "x: ";
+    write x;
+    write "\n";
+
+    while (low <= high) do
+        mid := (low + high)/2;
+        if (x = collection[mid]) then
+            flag := true;
+            low := high;
+        else
+            if (x < collection[mid]) then
+                high := mid - 1;
+            else
+                low := mid + 1;
+            fi
+        fi
+    od
+
+    if (flag) then
+        write "x is found\n";
+    else
+        write "x is not found\n";
+    fi
+end
+
+proc main()
+begin
+    write "Hello, this is a binary search.\n";
+    call binary_search();
+end

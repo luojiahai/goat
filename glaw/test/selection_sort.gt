@@ -1,0 +1,55 @@
+proc selection_sort()
+    int length;
+    int collection[6];
+    int i;
+    int j;
+    int tmp;
+    int min;
+begin
+    length := 6;
+    collection[0] := 3;
+    collection[1] := 6;
+    collection[2] := 2;
+    collection[3] := 1;
+    collection[4] := 5;
+    collection[5] := 4;
+    write "unsorted: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write collection[3];
+    write collection[4];
+    write collection[5];
+    write "\n";
+
+    i := 0;
+    while i < (length - 1) do
+        min := i;
+        j := i + 1;
+        while j < length do
+            if collection[j] < collection [min] then
+                min := j;
+            fi
+            j := j + 1;
+        od
+        tmp := collection[min];
+        collection[min] := collection [i];
+        collection [i] := tmp;
+        i := i + 1;
+    od
+
+    write "sorted: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write collection[3];
+    write collection[4];
+    write collection[5];
+    write "\n";
+end
+
+proc main()
+begin
+    write "Hello, this is a selection sort.\n";
+    call selection_sort();
+end

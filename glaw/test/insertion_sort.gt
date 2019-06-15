@@ -1,0 +1,50 @@
+proc insertion_sort()
+    int length;
+    int collection[6];
+    int i;
+    int j;
+    int tmp;
+begin
+    length := 6;
+    collection[0] := 3;
+    collection[1] := 6;
+    collection[2] := 2;
+    collection[3] := 1;
+    collection[4] := 5;
+    collection[5] := 4;
+    write "unsorted: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write collection[3];
+    write collection[4];
+    write collection[5];
+    write "\n";
+
+    i := 1;
+    while i < length do
+        j := i;
+        while j > 0 && collection[j - 1] > collection[j] do
+            tmp := collection[j];
+            collection[j] := collection [j - 1];
+            collection [j - 1] := tmp;
+            j := j - 1;
+        od
+        i := i + 1;
+    od
+
+    write "sorted: ";
+    write collection[0];
+    write collection[1];
+    write collection[2];
+    write collection[3];
+    write collection[4];
+    write collection[5];
+    write "\n";
+end
+
+proc main()
+begin
+    write "Hello, this is an insertion sort.\n";
+    call insertion_sort();
+end
