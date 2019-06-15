@@ -1,0 +1,7 @@
+proc main()
+    int a[7,5];
+begin
+    a[2,3] := 3;
+    write a[2,3];
+    write "\n";
+end

@@ -387,7 +387,7 @@ cLvalue (LMatrixRef pos ident expr1 expr2) reg table tables =
     slot = cGetSlot ident table tables
     len = 
       case cGetGoatType ident table tables of
-        (Matrix baseType i j) -> i
+        (Matrix baseType i j) -> j
         otherwise -> error $ "InternalError: cLvalue " ++ show pos
 
 -- generate oz code of builtin function call
@@ -539,7 +539,7 @@ cMatrixRef (MatrixRef pos ident expr1 expr2) isLoadAddr reg table tables =
     slot = cGetSlot ident table tables
     len = 
       case cGetGoatType ident table tables of
-        (Matrix baseType i j) -> i
+        (Matrix baseType i j) -> j
         otherwise -> error $ "InternalError: cMatrixRef " ++ show pos
 
 -- generate oz code of and expression
