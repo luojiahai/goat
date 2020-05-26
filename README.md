@@ -9,12 +9,18 @@ $ ./_scripts/build
 ## Compile and run
 
 ```
-$ stack exec -- goat-exe ./in/{FILENAME}.gt/ > ./out/{FILENAME}.oz
-$ ./oz/oz ./out/{FILENAME}.oz
+$ stack exec -- goat-exe ./_data/in/{FILENAME}.gt/ > ./_data/out/{FILENAME}.oz
+$ ./oz/oz ./_data/out/{FILENAME}.oz
 ```
 
 ## Test and verify
 
 ```
 $ ./_scripts/test
+```
+
+## Clean
+
+```
+$ ./_scripts/clean
 ```
