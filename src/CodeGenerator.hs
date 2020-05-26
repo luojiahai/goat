@@ -457,16 +457,7 @@ gProcArgRef ident baseType expr reg table tables =
   if (gGetExprBaseType expr table tables) == baseType 
   then gExprAddr expr reg table tables
   else
-    case baseType of
-      FloatType ->
-        if (gGetExprBaseType expr table tables) == IntType
-        then 
-          gExprAddr expr reg table tables
-          ++ indentation ++ "int_to_real " 
-          ++ "r" ++ show reg ++ ", " ++ "r" ++ show reg ++ "\n"
-        else
-          error $ "RuntimeError: Type error"
-      otherwise -> error $ "RuntimeError: Type error"
+      error $ "RuntimeError: Type error"
 
 -- generate oz code of an expression as ref
 gExprAddr :: Expr -> Int -> SymTable -> [SymTable] -> String

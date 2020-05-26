@@ -1,9 +1,9 @@
 # goat-lang
 
-## Build and run a test
+## Build
 
 ```
-$ ./_scripts/helloharald
+$ ./_scripts/build
 ```
 
 ## Compile and run

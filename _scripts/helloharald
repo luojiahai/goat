@@ -1,0 +1,4 @@
+stack exec -- goat-exe ./_data/in/helloharald.gt > ./_data/out/helloharald.oz
+
+./oz/oz ./_data/out/helloharald.oz
+
