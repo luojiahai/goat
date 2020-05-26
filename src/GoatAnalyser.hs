@@ -1,8 +1,18 @@
-module GoatAnalyser where
+module GoatAnalyser 
+where
+
+
+-------------------------------------------------------------------------
+-- GoatAnalyser
+-------------------------------------------------------------------------
 
 import GoatAST
 import SymbolTable
 
+
+-------------------------------------------------------------------------
+-- GoatAnalyser function definitions
+-------------------------------------------------------------------------
 
 -- analyse a goat program given symbol tables
 analyse :: Program -> [SymTable]

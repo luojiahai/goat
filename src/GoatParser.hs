@@ -1,6 +1,7 @@
 module GoatParser (ast)
 where
 
+
 -------------------------------------------------------------------------
 --  A parser for Goat, poorly commented.
 --  It should still be fairly easy to read, as it uses the Parsec parser

@@ -1,8 +1,18 @@
-module SymbolTable where
+module SymbolTable 
+where
+
+
+-------------------------------------------------------------------------
+-- SymbolTable
+-------------------------------------------------------------------------
 
 import GoatAST
 import qualified Data.Map
 
+
+-------------------------------------------------------------------------
+-- SymbolTable declarations
+-------------------------------------------------------------------------
 
 type HashMap = Data.Map.Map String Symbol
 
@@ -18,6 +28,10 @@ data Attribute =
   | AType BaseType | AValue Expr | AGoatType GoatType
   deriving (Show, Eq)
 
+
+-------------------------------------------------------------------------
+-- GoatAnalyser function definitions
+-------------------------------------------------------------------------
 
 -- create symbol tables given a goat program (a sequence of procedures)
 createSymbolTables :: Program -> [SymTable]

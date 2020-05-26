@@ -1,4 +1,6 @@
-module GoatAST where
+module GoatAST 
+where
+
 
 ---------------------------------------------------------------------------
 --  Specification of an AST for Goat 

@@ -1,11 +1,26 @@
-module CodeGenerator where
+module CodeGenerator 
+where
+
+
+-------------------------------------------------------------------------
+-- CodeGenerator
+-------------------------------------------------------------------------
 
 import GoatAST
 import SymbolTable
 import Control.Monad.State
 
+
+-------------------------------------------------------------------------
+-- CodeGenerator declarations
+-------------------------------------------------------------------------
+
 indentation = "    "
 
+
+-------------------------------------------------------------------------
+-- CodeGenerator function definitions
+-------------------------------------------------------------------------
 
 -- generate oz code of a goat program
 generate :: Program -> [SymTable] -> String
