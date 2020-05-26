@@ -6,6 +6,13 @@
 $ ./_scripts/helloharald
 ```
 
+## Compile and run
+
+```
+$ stack exec -- goat-exe ./in/{FILENAME}.gt/ > ./out/{FILENAME}.oz
+$ ./oz/oz ./out/{FILENAME}.oz
+```
+
 ## Test and verify
 
 ```

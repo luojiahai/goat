@@ -4,5 +4,3 @@ stack build
 stack exec -- goat-exe ./_data/test/goat/algos/helloharald.goat > ./_data/out/helloharald.oz
 
 ./oz/oz ./_data/out/helloharald.oz
-
-make clean -C ./oz
