@@ -1,2 +1,8 @@
+make -C ./oz
+
 stack build
-stack exec -- goat-exe -p kid/fulltest.gt
+stack exec -- goat-exe kid/hello.gt > out/hello.oz
+
+./oz/oz ./out/hello.oz
+
+make clean -C ./oz
