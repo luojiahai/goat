@@ -1,77 +1,85 @@
----------------------------------------------------------------------
--- COMP90045 Programming Language Implementation                   --
--- Programming Project: Goat                                       --
---                                                                 --
--- Team: GOAT SIMULATOR                                            --
--- Members:                                                        --
---          Chenqin Zhang, Geoffrey Ka-Hoi Law, Yun Chen           --
---          733301, 759218, 760419                                 --
---          {chenqinz, glaw, yunc4}@student.unimelb.edu.au         --
----------------------------------------------------------------------
+module Main (main) 
+where
 
-module Main where 
+-------------------------------------------------------------------------
+--  Main function for a Goat compiler.  
+--  At this stage, only a parser and pretty-printer has been implemented.
+--
+--  Harald Sondergaard, April 2019
+-------------------------------------------------------------------------
 
-import GoatParser
-import GoatPrettyPrinter
-import System.Environment
-import System.Exit
+import GoatParser (ast)
+import Analyze
+import CodeGen
+import PrettyPrinter (prettyPrint)
+import System.Environment (getProgName, getArgs)
+import System.Exit (exitWith, ExitCode(..))
 
+data Task
+  = Pprint | Compile | Parse
+    deriving (Eq, Show)
 
-data Task = 
-  Compile | Parse | Pprint
-  deriving (Show, Eq)
-
--- Main function
 main :: IO ()
-main = 
-  do
-    progname <- getProgName
-    args <- getArgs
-    task <- checkArgs progname args
-    processTask args task
+main
+  = do
+      progname <- getProgName
+      args <- getArgs
+      task <- checkArgs progname args
+      case task of
+        Compile 
+          -> do
+               let [filename] = args
+               input <- readFile filename
+               let output = ast input
+               case output of
+                 Right tree -> do
+                                 let tables = analyze tree
+                                 let code = codegen tree tables
+                                 putStrLn (code)
+                 Left err -> do 
+                               putStr "Parse error at "
+                               print err
+                               exitWith (ExitFailure 2)
+               exitWith ExitSuccess
+        Parse
+          -> do
+               let [_, filename] = args
+               input <- readFile filename
+               let output = ast input
+               case output of
+                 Right tree 
+                   -> putStrLn (show tree)
+                 Left err 
+                   -> do { putStr "Parse error at "
+                         ; print err
+                         ; exitWith (ExitFailure 2) 
+                         }
+        Pprint
+          -> do
+               let [_, filename] = args
+               input <- readFile filename
+               let output = ast input
+               case output of
+                 Right tree 
+                   -> putStrLn (prettyPrint tree)
+                 Left err 
+                   -> do { putStr "Parse error at "
+                         ; print err
+                         ; exitWith (ExitFailure 2) 
+                         }
 
--- Processes a task
-processTask :: [String] -> Task -> IO ()
-processTask args Compile =
-  do
-    putStrLn "Sorry, cannot generate code yet"
-    exitWith ExitSuccess
-processTask args Parse =
-  do
-    let [_, filename] = args
-    input <- readFile filename
-    let output = ast input
-    case output of
-      Right tree -> putStrLn (show tree)
-      Left err -> do 
-                    putStr "Parse error at "
-                    print err
-                    exitWith (ExitFailure 2)
-processTask args Pprint =
-  do
-    let [_, filename] = args
-    input <- readFile filename
-    let output = ast input
-    case output of
-      Right tree -> prettyPrint tree
-      Left err -> do 
-                    putStr "Parse error at "
-                    print err
-                    exitWith (ExitFailure 2)
-
--- Checks command line arguments
 checkArgs :: String -> [String] -> IO Task
-checkArgs _ ['-':_] = 
-  do
-    putStrLn ("Missing filename")
-    exitWith (ExitFailure 1)
-checkArgs _ [filename] = 
-  return Compile
-checkArgs _ ["-p", filename] = 
-  return Pprint
-checkArgs _ ["-a", filename] = 
-  return Parse
-checkArgs progname _ = 
-  do
-    putStrLn ("Usage: " ++ progname ++ " [-p] filename")
-    exitWith (ExitFailure 1)
+checkArgs _ ['-':_]
+  = do
+      putStrLn ("Missing filename")
+      exitWith (ExitFailure 1)
+checkArgs _ [filename]
+  = return Compile
+checkArgs _ ["-p", filename]
+  = return Pprint
+checkArgs _ ["-a", filename]
+  = return Parse
+checkArgs progname _
+  = do
+      putStrLn ("Usage: " ++ progname ++ " [-p] filename")
+      exitWith (ExitFailure 1)

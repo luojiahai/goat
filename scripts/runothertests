@@ -1,8 +1,8 @@
 
-for filename in ./tests/others/goat/algos/*.goat; do
-    stack exec -- goat-exe -p "$filename" > ./tests/others/ouroutput/algos/$(basename "$filename" .goat).out
+for filename in ./testcases/goat/algos/*.goat; do
+    stack exec -- goat-exe -p "$filename" > ./testcases/actual/algos/$(basename "$filename" .goat).out
 done
 
-for filename in ./tests/others/goat/syntax/*.goat; do
-    stack exec -- goat-exe -p "$filename" > ./tests/others/ouroutput/syntax/$(basename "$filename" .goat).out
+for filename in ./testcases/goat/syntax/*.goat; do
+    stack exec -- goat-exe -p "$filename" > ./testcases/actual/syntax/$(basename "$filename" .goat).out
 done
