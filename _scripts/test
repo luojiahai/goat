@@ -1,0 +1,17 @@
+for filename in ./_data/test/goat/algos/*.goat; do
+    stack exec -- goat-exe -p "$filename" > ./_data/test/actual/algos/$(basename "$filename" .goat).out
+done
+
+for filename in ./_data/test/goat/syntax/*.goat; do
+    stack exec -- goat-exe -p "$filename" > ./_data/test/actual/syntax/$(basename "$filename" .goat).out
+done
+
+for filename in ./_data/test/expected/algos/*.out; do
+    echo "$filename"
+    diff "$filename"  ./_data/test/actual/algos/$(basename "$filename" .out).out
+done
+
+for filename in ./_data/test/expected/syntax/*.out; do
+    echo "$filename"
+    diff "$filename"  ./_data/test/actual/syntax/$(basename "$filename" .out).out
+done

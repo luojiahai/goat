@@ -1,28 +1,16 @@
----------------------------------------------------------------------
--- COMP90045 Programming Language Implementation                   --
--- Programming Project: Goat                                       --
---                                                                 --
--- Team: GOAT SIMULATOR                                            --
--- Members:                                                        --
---          Chenqin Zhang, Geoffrey Ka-Hoi Law, Yun Chen           --
---          733301, 759218, 760419                                 --
---          {chenqinz, glaw, yunc4}@student.unimelb.edu.au         --
----------------------------------------------------------------------
-
-
-module Analyze where
+module GoatAnalyser where
 
 import GoatAST
-import SymTable
+import SymbolTable
 
 
--- analyze a goat program given symbol tables
-analyze :: Program -> [SymTable]
-analyze (Program procs) = 
+-- analyse a goat program given symbol tables
+analyse :: Program -> [SymTable]
+analyse (Program procs) = 
   case aProcs procs tables of
     True -> tables
     False -> error $ "InternalError"
-  where tables = symTable (Program procs)
+  where tables = createSymbolTables (Program procs)
 
 -- validate main procedure
 aCheckMain :: [SymTable] -> Bool
@@ -41,28 +29,28 @@ aCheckDuplicateProc tables =
     False -> True
     True -> error $ "SemanticError: Duplicate procedures"
 
--- analyze a sequence of procedures
+-- analyse a sequence of procedures
 aProcs :: [Procedure] -> [SymTable] -> Bool
 aProcs [] tables = True
 aProcs [proc] tables = 
   (aProc proc tables) && (aCheckMain tables) && (aCheckDuplicateProc tables)
 aProcs (proc:procs) tables = (aProc proc tables) && (aProcs procs tables)
 
--- analyze a procedure
+-- analyse a procedure
 aProc :: Procedure -> [SymTable] -> Bool
 aProc (Procedure pos ident prmts decls stmts) tables = 
   case stLookupSymTable ident tables of
     Just table -> aStmts stmts tables table
     Nothing -> error $ "SemanticError: Undefined procedure " ++ ident
 
--- analyze a sequence of statements
+-- analyse a sequence of statements
 aStmts :: [Stmt] -> [SymTable] -> SymTable -> Bool
 aStmts [] _ table = True
 aStmts [stmt] tables table = aStmt stmt tables table
 aStmts (stmt:stmts) tables table = 
   (aStmt stmt tables table) && (aStmts stmts tables table)
 
--- analyze a statement
+-- analyse a statement
 aStmt :: Stmt -> [SymTable] -> SymTable -> Bool
 aStmt (Assign pos lvalue expr) tables table = 
   (aLvalue lvalue tables table) && (aExpr expr tables table)
@@ -80,14 +68,14 @@ aStmt (IfElse pos expr stmts1 stmts2) tables table =
 aStmt (While pos expr stmts) tables table = 
   (aExpr expr tables table) && (aStmts stmts tables table)
 
--- analyze a sequence of expressions
+-- analyse a sequence of expressions
 aExprs :: [Expr] -> [SymTable] -> SymTable -> Bool
 aExprs [] _ table = True
 aExprs [expr] tables table = aExpr expr tables table
 aExprs (expr:exprs) tables table = 
   (aExpr expr tables table) && (aExprs exprs tables table)
 
--- analyze an expression
+-- analyse an expression
 aExpr :: Expr -> [SymTable] -> SymTable -> Bool
 aExpr (BoolCon pos const) tables table = True
 aExpr (And pos expr1 expr2) tables table = True
@@ -103,7 +91,7 @@ aExpr (MatrixRef pos ident expr1 expr2) tables table = True
 aExpr (BinOpExp pos binOp expr1 expr2) tables table = True
 aExpr (UnaryMinus pos expr) tables table = True
 
--- analyze lvalue
+-- analyse lvalue
 aLvalue :: Lvalue -> [SymTable] -> SymTable -> Bool
 aLvalue (LId pos ident) tables table = aIdBase ident tables table
 aLvalue (LArrayRef pos ident expr) tables table = 
@@ -111,7 +99,7 @@ aLvalue (LArrayRef pos ident expr) tables table =
 aLvalue (LMatrixRef pos ident expr1 expr2) tables table = 
   aIdMatrix ident tables table
 
--- analyze base id
+-- analyse base id
 aIdBase :: Ident -> [SymTable] -> SymTable -> Bool
 aIdBase ident tables table =
   case stLookupHashMap ident table of
@@ -125,7 +113,7 @@ aIdBase ident tables table =
         Nothing -> error $ "InternalError: No AGoatType"
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
--- analyze array id
+-- analyse array id
 aIdArray :: Ident -> [SymTable] -> SymTable -> Bool
 aIdArray ident tables table =
   case stLookupHashMap ident table of
@@ -139,7 +127,7 @@ aIdArray ident tables table =
         Nothing -> error $ "InternalError: No AGoatType"
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
 
--- analyze matrix id
+-- analyse matrix id
 aIdMatrix :: Ident -> [SymTable] -> SymTable -> Bool
 aIdMatrix ident tables table =
   case stLookupHashMap ident table of
@@ -153,7 +141,7 @@ aIdMatrix ident tables table =
         Nothing -> error $ "InternalError: No AGoatType"
     Nothing -> error $ "SemanticError: Undefined variable " ++ ident
   
--- analyze procedure call
+-- analyse procedure call
 aCall :: String -> [Expr] -> [SymTable] -> SymTable -> Bool
 aCall ident exprs tables table = 
   case stLookupSymTable ident tables of

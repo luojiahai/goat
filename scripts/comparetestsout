@@ -1,9 +1,0 @@
-for filename in ./testcases/expected/algos/*.out; do
-    echo "$filename"
-    diff "$filename"  ./testcases/actual/algos/$(basename "$filename" .out).out
-done
-for filename in ./testcases/expected/syntax/*.out; do
-    echo "$filename"
-    diff "$filename"  ./testcases/actual/syntax/$(basename "$filename" .out).out
-done
-

@@ -1,16 +1,4 @@
----------------------------------------------------------------------
--- COMP90045 Programming Language Implementation                   --
--- Programming Project: Goat                                       --
---                                                                 --
--- Team: GOAT SIMULATOR                                            --
--- Members:                                                        --
---          Chenqin Zhang, Geoffrey Ka-Hoi Law, Yun Chen           --
---          733301, 759218, 760419                                 --
---          {chenqinz, glaw, yunc4}@student.unimelb.edu.au         --
----------------------------------------------------------------------
-
-
-module SymTable where
+module SymbolTable where
 
 import GoatAST
 import qualified Data.Map
@@ -31,9 +19,9 @@ data Attribute =
   deriving (Show, Eq)
 
 
--- generate symbol tables given a goat program
-symTable :: Program -> [SymTable]
-symTable (Program procs) = stProcs procs
+-- create symbol tables given a goat program (a sequence of procedures)
+createSymbolTables :: Program -> [SymTable]
+createSymbolTables (Program procs) = stProcs procs
 
 -- get hashmap size
 stHashMapSize :: HashMap -> Int

@@ -1,3 +1,0 @@
-for filename in ./testcases/goat/other/*.gt; do
-    stack exec -- goat-exe -p "$filename" > ./testcases/actual/other/$(basename "$filename" .gt).out
-done

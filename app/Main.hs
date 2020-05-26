@@ -9,8 +9,8 @@ where
 -------------------------------------------------------------------------
 
 import GoatParser (ast)
-import Analyze
-import CodeGen
+import GoatAnalyser
+import CodeGenerator
 import PrettyPrinter (prettyPrint)
 import System.Environment (getProgName, getArgs)
 import System.Exit (exitWith, ExitCode(..))
@@ -33,8 +33,8 @@ main
                let output = ast input
                case output of
                  Right tree -> do
-                                 let tables = analyze tree
-                                 let code = codegen tree tables
+                                 let tables = analyse tree
+                                 let code = generate tree tables
                                  putStrLn (code)
                  Left err -> do 
                                putStr "Parse error at "
