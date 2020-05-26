@@ -1,80 +1,94 @@
----------------------------------------------------------------------
--- COMP90045 Programming Language Implementation                   --
--- Programming Project: Goat                                       --
---                                                                 --
--- Team: GOAT SIMULATOR                                            --
--- Members:                                                        --
---          Chenqin Zhang, Geoffrey Ka-Hoi Law, Yun Chen           --
---          733301, 759218, 760419                                 --
---          {chenqinz, glaw, yunc4}@student.unimelb.edu.au         --
----------------------------------------------------------------------
-
-
 module GoatAST where
 
-type Name = String 
+---------------------------------------------------------------------------
+--  Specification of an AST for Goat 
+--
+--  Harald Sondergaard, April 2019
+-- 
+--  The constructors for the AST are mainly self-explanatory. We leave 
+--  open the possibility of an expression 'ToFloat e', in preparation for 
+--  static semantic analysis; that is, we intend to let the analyzer 
+--  change the AST when it sees a need for integer-to-float conversion.
+--
+--  We also decorate the tree with source code position information. 
+--  A 'pos' of type Pos is a pair (line, column). This way the semantic
+--  analysis can give meaningful error messages, without the parser
+--  having to construct a symbol table - that can be left to the 
+--  analysis stage.
+---------------------------------------------------------------------------
 
-data Ident
-  = Ident Name
-  | IdentWithShape Name [Expr]
-    deriving (Show, Eq)
+type Ident = String
 
+type Pos
+  = (Int,Int)
+ 
 data BaseType 
-  = BoolType | IntType | FloatType
-    deriving (Show, Eq)
+  = BoolType | IntType | FloatType | StringType
+    deriving (Show,Eq)
+
+data GoatType 
+  = Base BaseType
+  | Array BaseType Int
+  | Matrix BaseType Int Int
+    deriving (Show,Eq)
 
 data Lvalue 
-  = LId Ident
-    deriving (Show, Eq)
+  = LId Pos Ident 
+  | LArrayRef Pos Ident Expr 
+  | LMatrixRef Pos Ident Expr Expr 
+    deriving (Show,Eq)
+
+data Binop 
+  = Op_add | Op_sub | Op_mul | Op_div 
+    deriving (Show,Eq)
+
+data Relop
+  = Op_eq | Op_ne | Op_ge | Op_le | Op_gt | Op_lt
+    deriving (Show,Eq)
 
 data Expr
-  = IntConst Int
-  | StrConst String
-  | FloatConst Float
-  | Id Ident
-  | BoolConst Bool
-  | UnExpr UnOp Expr
-  | BinExpr BinOp Expr Expr
-    deriving (Show, Eq)
-    
-data UnOp
-  = Negative | Not
-    deriving (Show, Eq)
-
-data BinOp
-  = Add | Subtract | Multiply | Divide 
-  | And | Or | Equal | Greater | Less 
-  | NotEqual | GreaterEqual | LessEqual
-    deriving (Show, Eq)
+  = BoolCon Pos Bool
+  | And Pos Expr Expr
+  | Or Pos Expr Expr
+  | Not Pos Expr
+  | Rel Pos Relop Expr Expr
+  | IntCon Pos Int
+  | FloatCon Pos Float
+  | StrCon Pos String
+  | Id Pos Ident
+  | ArrayRef Pos Ident Expr
+  | MatrixRef Pos Ident Expr Expr
+  | BinOpExp Pos Binop Expr Expr
+  | UnaryMinus Pos Expr
+    deriving (Show,Eq)
 
 data Decl 
-  = Decl Ident BaseType
-    deriving (Show, Eq)
+  = Decl Pos Ident GoatType
+    deriving (Show,Eq)
 
 data Stmt 
-  = Assign Lvalue Expr
-  | Read Lvalue
-  | Write Expr
-  | Call Name [Expr]
-  | IfThen Expr [Stmt]
-  | IfThenElse Expr [Stmt] [Stmt]
-  | While Expr [Stmt]
-    deriving (Show, Eq)
+  = Assign Pos Lvalue Expr
+  | Read Pos Lvalue
+  | Write Pos Expr
+  | ProcCall Pos Ident [Expr]
+  | If Pos Expr [Stmt]
+  | IfElse Pos Expr [Stmt] [Stmt]
+  | While Pos Expr [Stmt]
+    deriving (Show,Eq)
 
-data PrmtIndicator
-  = Val 
-  | Ref
-    deriving (Show, Eq)
+data ParMode 
+  = Val | Ref
+    deriving (Show,Eq)
 
-data Prmt
-  = Prmt PrmtIndicator BaseType Name
-    deriving (Show, Eq)
+data FormalArgSpec
+  = FormalArgSpec Pos ParMode BaseType Ident
+    deriving (Show,Eq)
 
-data Procedure
-  = Procedure Name [Prmt] [Decl] [Stmt]
-  | Main [Decl] [Stmt]
-    deriving (Show, Eq)
+data Procedure 
+  = Procedure Pos Ident [FormalArgSpec] [Decl] [Stmt]
+    deriving (Show,Eq)
 
-data GoatProgram
-  = GoatProgram [Procedure]
-    deriving (Show, Eq)
+data Program 
+  = Program [Procedure]
+    deriving (Show,Eq)
+ 
